@@ -1,0 +1,47 @@
+name: Reusable Slack Notification
+
+on:
+  workflow_call:
+    inputs:
+      CHANNEL_NAME:
+        required: true
+        type: string
+      TITLE:
+        required: true
+        type: string
+      MESSAGE:
+        required: true
+        type: string
+    secrets:
+      OOZOU_SLACK_NOTIFICATION_WEBHOOK_URL:
+        required: true
+
+jobs:
+  slackNotify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check channel name
+        env:
+          CHANNEL_NAME: ${{ inputs.CHANNEL_NAME }}
+        run: |
+          if [[ "$CHANNEL_NAME" == *-notifications ]]; then
+            exit 0
+          else
+            echo "CHANNEL_NAME should end with -notifications"
+            exit 1
+          fi
+
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.OOZOU_SLACK_NOTIFICATION_WEBHOOK_URL }}
+          SLACK_CHANNEL: ${{ inputs.CHANNEL_NAME }}
+          SLACK_USERNAME: O Notify Bot
+          SLACK_TITLE: ${{ inputs.TITLE }}
+          SLACK_MESSAGE: ${{ inputs.MESSAGE }}
+          SLACK_ICON: https://cdn.oozou.com/assets/website/brand-alt-7457e1f6c29ebe10dfa84eb2520da362f804797bcfc539d0d994d1b244201922.svg
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_FOOTER: https://github.com/${{ github.repository }}
+          MSG_MINIMAL: ref,actions url,commit
