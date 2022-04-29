@@ -41,7 +41,7 @@ jobs:
           SLACK_USERNAME: O Notify Bot
           SLACK_TITLE: ${{ inputs.TITLE }}
           SLACK_MESSAGE: ${{ inputs.MESSAGE }}
-          SLACK_ICON: https://cdn.oozou.com/assets/website/brand-alt-7457e1f6c29ebe10dfa84eb2520da362f804797bcfc539d0d994d1b244201922.svg
+          SLACK_ICON: false
           SLACK_COLOR: ${{ job.status }}
           SLACK_FOOTER: https://github.com/${{ github.repository }}
           MSG_MINIMAL: ref,actions url,commit
