@@ -1,0 +1,41 @@
+name: code scan
+
+on:
+  workflow_call:
+    inputs:
+      SCAN-TYPE:
+        required: true
+        type: string
+      SCAN-PATH:
+        required: true
+        type: string  
+      SCAN-OUTPUT:
+        required: false
+        type: string   
+    secrets:
+      SONAR_TOKEN:
+        required: true       
+      SONAR_HOST_URL:
+        required: true          
+jobs:
+  Code-Scan:
+    runs-on: oozou-eks-runner
+      
+    steps:
+    - uses: actions/checkout@v2
+        
+    - name: IaC KICS scan
+      if: ${{inputs.SCAN-TYPE  == 'IaC' }}
+      working-directory: ${{inputs.SCAN-PATH}}
+      run: |
+        docker run -v $PWD:/path checkmarx/kics scan -p "/path" -o "/path" --report-formats "sonarqube" --ignore-on-exit "all"
+        if [ -z ${{inputs.SCAN-OUTPUT}} ]; then export output="iac-output.json";  else export output=${{inputs.SCAN-OUTPUT}}; fi
+        sed "s/..\/..\/path\///g" sonarqube-results.json > $output
+        
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      with:
+        projectBaseDir: ${{inputs.SCAN-PATH}}
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
