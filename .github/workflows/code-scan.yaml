@@ -50,6 +50,18 @@ jobs:
         docker run -w /path -v $PWD:/path checkmarx/kics scan -o /path -p "${{inputs.SCAN_INCLUDE}}" --report-formats "sonarqube" --ignore-on-exit "all" ${arg} 
         mv sonarqube-results.json external_report
 
+
+    - name: Nodejs scan
+      if: contains(inputs.SCAN_TYPE, 'JavaScript')
+      uses: ajinabraham/njsscan-action@master
+      with:
+        args: '. --sonarqube  --output njsscan_report.sonar || true'
+        
+    - name: process njsscan report
+      if: contains(inputs.SCAN_TYPE, 'JavaScript')
+      run: |
+        awk 'BEGIN{ FS=OFS=": " } /\"endColumn\"/{ match($NF, /^[0-9]+/); $NF=($NF-1) substr($NF, RLENGTH+1) }1' njsscan_report.sonar > external_report
+
       
     - name: SonarQube Scan
       uses: sonarsource/sonarqube-scan-action@master
