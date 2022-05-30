@@ -16,6 +16,7 @@ This shared workflow is created to be used by other repositories workflows in th
 ## Example usage
 In your project workflow,  add `scan` job and pass the required variables.
 
+IaC Example:
 ```yml
 name: code-scan
 
@@ -33,4 +34,24 @@ jobs:
         SCAN_TYPE: IAC
         SCAN_INCLUDE: terraform/,docker/
         SCAN_EXCLUDE: terraform/modules/
+```
+
+Ruby Example:
+```yml
+name: code-scan
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+  schedule:
+      - cron: '0 11 * * 1-5' 
+jobs:
+		
+  scan:
+    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    secrets: inherit
+    with:
+        SCAN_TYPE: RUBY
+        SCAN_INCLUDE: app/,config/,db/,lib/
+        SCAN_EXCLUDE: app/assets/
 ```
