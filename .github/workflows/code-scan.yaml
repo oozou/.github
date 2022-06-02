@@ -71,7 +71,7 @@ jobs:
           -Dsonar.projectKey=${{ github.event.repository.name }}-${{inputs.SCAN_TYPE}}
           -Dsonar.externalIssuesReportPaths=external_report
           -Dsonar.sources=${{inputs.SCAN_INCLUDE}}
-          -Dsonar.exclusions=${{inputs.SCAN_EXCLUDE}}
+          -Dsonar.exclusions=${{inputs.SCAN_EXCLUDE}},**/*java
           -Dsonar.ruby.rubocop.reportPaths=$RUBOCOP_REPORT
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
