@@ -7,7 +7,7 @@ This shared workflow is created to be used by other repositories workflows in th
 
 |  Input Name   | Input Type  | Required | Note |
 | :------------: | :------------: | :------------: | :------------ |
-| SCAN_TYPE  | string | Yes |Support types:<br/>- IAC (Include Terraform, Docker, Kubernetes) <br/>- RUBY |
+| SCAN_TYPE  | string | Yes |Support types:<br/>- IAC (Include Terraform, Docker, Kubernetes) <br/>- RUBY  <br/>- JAVASCRIPT (.njsscan file is required under the root path, example: [.nsscan](./.njsscan)|
 |  SCAN_INCLUDE | string | Yes |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: terraform/,Dockerfile| 
 |  SCAN_EXCLUDE |  string | No |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: app/assets/,test/ | |
 
@@ -54,4 +54,25 @@ jobs:
         SCAN_TYPE: RUBY
         SCAN_INCLUDE: app/,config/,db/,lib/
         SCAN_EXCLUDE: app/assets/
+```
+
+JavaScript Example:
+```yml
+name: code-scan
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - 'main'
+	  
+jobs:
+		
+  scan:
+    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    secrets: inherit
+    with:
+        SCAN_TYPE: JAVASCRIPT
+        SCAN_INCLUDE: packages/
 ```
