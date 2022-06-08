@@ -1,0 +1,28 @@
+---
+- nodejs-extensions:
+  - .js
+  - .ts
+
+  template-extensions:
+  - .new
+  - .hbs
+
+  ignore-filenames:
+  - skip.js
+
+  ignore-paths:
+  - __MACOSX
+  - skip_dir
+  - node_modules
+  - test
+
+  ignore-extensions:
+  - .jsx
+
+  ignore-rules:
+  - regex_injection_dos
+  - pug_jade_template
+
+  severity-filter:
+  - WARNING
+  - ERROR
