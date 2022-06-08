@@ -7,7 +7,7 @@ This shared workflow is created to be used by other repositories workflows in th
 
 |  Input Name   | Input Type  | Required | Note |
 | :------------: | :------------: | :------------: | :------------ |
-| SCAN_TYPE  | string | Yes |Support types:<br/>- IAC (Include Terraform, Docker, Kubernetes) <br/>- RUBY  <br/>- JAVASCRIPT (.njsscan file is required under the root path, example: [.nsscan](./.njsscan)|
+| SCAN_TYPE  | string | Yes |Support types:<br/>- IAC (Include Terraform, Docker, Kubernetes) <br/>- RUBY  <br/>- JAVASCRIPT (.njsscan file is required under the root path, sample: [.nsscan](./.njsscan))|
 |  SCAN_INCLUDE | string | Yes |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: terraform/,Dockerfile| 
 |  SCAN_EXCLUDE |  string | No |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: app/assets/,test/ | |
 
@@ -56,7 +56,7 @@ jobs:
         SCAN_EXCLUDE: app/assets/
 ```
 
-JavaScript Example:
+JavaScript Example: (Note: make sure .njsscan file is added under the root path. sample: [.nsscan](./.njsscan))
 ```yml
 name: code-scan
 
@@ -66,7 +66,6 @@ on:
   pull_request:
     branches:
       - 'main'
-	  
 jobs:
 		
   scan:
