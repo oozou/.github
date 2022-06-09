@@ -1,0 +1,14 @@
+---
+- ignore-filenames:
+  - skip.java
+
+  ignore-paths:
+  - __MACOSX
+  - skip_dir
+
+  ignore-rules:
+  - android_kotlin_logging
+
+  severity-filter:
+  - WARNING
+  - ERROR
