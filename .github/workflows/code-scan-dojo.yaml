@@ -101,6 +101,7 @@ jobs:
     - name: Get Scripts
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
+           ls -lart
 
     - name: Upload Result to Dojo
       run: |
