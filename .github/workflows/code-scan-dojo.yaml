@@ -2,6 +2,11 @@ name: code scan to dojo
 
 on:
   workflow_call:
+    secrets:
+      DOJO_URL:
+        required: true
+      DOJO_API_KEY:
+        required: true
     inputs:
       SCAN_TYPE:
         required: true
@@ -102,6 +107,7 @@ jobs:
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
            ls -lart
+           cat dojo-env.ini
 
     - name: Upload Result to Dojo
       run: |
