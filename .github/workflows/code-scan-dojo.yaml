@@ -77,7 +77,7 @@ jobs:
 
     - name: Prepare dojo ENV
       run: |
-        cat << EOF > .github/workflows/dojo-env.ini
+        cat << EOF > dojo-env.ini
         [server]
         url = ${{ secrets.DOJO_URL }}
         api_key = ${{ secrets.DOJO_API_KEY }}
@@ -98,7 +98,11 @@ jobs:
         file_path = results.json
         EOF
 
+    - name: Get Scripts
+      run: |
+           curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
+
     - name: Upload Result to Dojo
       run: |
         python --version
-        python .github/workflows/upload-to-dojo.py
+        python upload-to-dojo.py
