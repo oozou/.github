@@ -70,7 +70,6 @@ jobs:
         ls -lart
         mv results.json external_report
         echo "SCAN_TYPE_DOJO=$(echo 'KICS Scan')" >> $GITHUB_ENV
-        cat external_report
 
     # Doesn't support by dojo
     # - name: Nodejs scan
@@ -113,6 +112,7 @@ jobs:
            curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
            ls -lart
            cat dojo-env.ini
+           cat external_report
 
     - name: Upload Result to Dojo
       run: |
