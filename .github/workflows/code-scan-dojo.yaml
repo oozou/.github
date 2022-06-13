@@ -104,7 +104,7 @@ jobs:
         
         [scan]
         scan_type = ${{ env.SCAN_TYPE_DOJO }}
-        file_path = external_report/results.json
+        file_path = external_report
         EOF
 
     - name: Get Scripts
