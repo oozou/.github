@@ -98,7 +98,7 @@ jobs:
         
         [engagement]
         source_code_management_uri = ${{ github.server_url }}/${{ github.repository }}/blob/${{ steps.get-commit-sha.outputs.sha }}
-        engagement_name = terraform-aws-eks-${{ steps.get-commit-sha.outputs.sha }}
+        engagement_name = ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}
         commit_hash = ${{ steps.get-commit-sha.outputs.sha }}
         branch = ${{ github.head_ref || github.ref_name }}
         
