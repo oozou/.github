@@ -70,6 +70,7 @@ jobs:
         ls -lart
         mv results.json external_report
         echo "SCAN_TYPE_DOJO=$(echo 'KICS Scan')" >> $GITHUB_ENV
+        cat external_report
 
     # Doesn't support by dojo
     # - name: Nodejs scan
