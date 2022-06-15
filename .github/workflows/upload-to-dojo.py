@@ -17,6 +17,20 @@ def find_product_by_name(host,api_key,product_name):
     else:
         return None
 
+def find_engagement(host,api_key,engagement_name,product_id):
+    headers = dict()
+    AUTH_TOKEN = "Token " + str(api_key)
+    headers['Authorization'] = AUTH_TOKEN
+    print("\n==============Lists Engagement=================")
+    r = requests.get(host + "/engagements/?name="+str(engagement_name)+'&product='+str(product_id), headers=headers, verify=True)
+    print(r.text)
+
+    r = json.loads(r.text)
+    if(r['count'] > 0):
+        return r['results']
+    else:
+        return None
+
 def create_product(host,api_key,product_name,product_type,description):
     headers = dict()
     json = dict()
@@ -57,6 +71,8 @@ def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source
     json['engagement_type'] = "CI/CD"
     json['source_code_management_uri'] = source_code_management_uri
 
+    json['lead'] = 2
+
     print(json)
     r = requests.post(host+"/engagements/", headers=headers, verify=True, json=json)
     print(r)
@@ -66,11 +82,10 @@ def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source
 def upload_scan_result(host,api_key,product_name,engagement_name,scan_type,file_path):
     print("\n===============Upload Scan Results============")
     headers = dict()
-    json = dict()
 
     AUTH_TOKEN = "Token " + str(api_key)
     headers['Authorization'] = AUTH_TOKEN
-    print(headers)
+    # print(headers)
 
     files = dict()
     files['file'] = open(file_path,'rb')
@@ -90,27 +105,57 @@ def upload_scan_result(host,api_key,product_name,engagement_name,scan_type,file_
     print(r.text)
     return r.status_code, r.text
 
+def reimport_scan_result(host,api_key,product_name,engagement_name,scan_type,file_path):
+    print("\n===============Re-import Scan Results============")
+    headers = dict()
+
+    AUTH_TOKEN = "Token " + str(api_key)
+    headers['Authorization'] = AUTH_TOKEN
+    # print(headers)
+
+    files = dict()
+    files['file'] = open(file_path, 'rb')
+
+    json = dict()
+    json['minimum_severity'] = "Info"
+    json['scan_date'] = datetime.now().strftime("%Y-%m-%d")
+    json['verified'] = False
+    json['tags'] = "automated"
+    json['active'] = True
+    json['engagement_name'] = engagement_name
+    json['product_name'] = product_name
+    json['scan_type'] = scan_type
+
+    r = requests.post(host + "/reimport-scan/", headers=headers, verify=True, data=json, files=files)
+    print(r)
+    print(r.text)
+    return r.status_code, r.text
+
 print("starting")
 product_id = None
 
 # Read config file
-config = configparser.ConfigParser()
+config = configparser()
 config.read('dojo-env.ini')
 
 url = config['server']['url']
 api_key = config['server']['api_key']
-#
+
 product_name = config['product']['product_name']
 description = config['product']['description']
 product_type = config['product']['product_type']
-#
+
 source_code_management_uri = config['engagement']['source_code_management_uri']
 engagement_name = config['engagement']['engagement_name']
 commit_hash = config['engagement']['commit_hash']
 branch = config['engagement']['branch']
-#
+
 scan_type = config['scan']['scan_type']
 file_path = config['scan']['file_path']
+try:
+    reupload_enabled = config['scan']['reupload']
+except:
+    reupload_enabled = "false"
 
 query_result = find_product_by_name(url,api_key,product_name)
 if (query_result != None):
@@ -123,10 +168,22 @@ else:
     product_id = result['id']
 print(product_id)
 
-status_code, result = create_engagement(url,api_key,engagement_name,product_id,commit_hash,branch,source_code_management_uri)
-result = json.loads(result)
-engagement_id = result['id']
-print(engagement_id)
 
+# Don't create the existing engagement
+engagement_name_id = None
+query_result = find_engagement(url,api_key,engagement_name,product_id)
+print(query_result)
 
-status_code, result = upload_scan_result(url,api_key,product_name,engagement_name,scan_type,file_path)
+# found engagement and try to reimport
+if (query_result != None and reupload_enabled == 'true'):
+    print("Engagement is created already")
+    engagement_name_id = query_result[0]['id']
+    print(engagement_name_id)
+    status_code, result = reimport_scan_result(url, api_key, product_name, engagement_name, scan_type, file_path)
+else:
+    # not found and engagement or force to create a new engagement
+    status_code, result = create_engagement(url,api_key,engagement_name,product_id,commit_hash,branch,source_code_management_uri)
+    result = json.loads(result)
+    engagement_id = result['id']
+    print(engagement_id)
+    status_code, result = upload_scan_result(url,api_key,product_name,engagement_name,scan_type,file_path)
