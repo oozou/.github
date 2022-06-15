@@ -16,7 +16,11 @@ on:
         type: string       
       SCAN_EXCLUDE:
         required: false
-        type: string            
+        type: string 
+      DOJO_REUPLOAD:
+        required: false
+        type: boolean
+        default: false
          
 jobs:
   Code-Scan:
@@ -83,6 +87,17 @@ jobs:
     #   run: |
     #     awk 'BEGIN{ FS=OFS=": " } /\"endColumn\"/{ match($NF, /^[0-9]+/); $NF=($NF-1) substr($NF, RLENGTH+1) }1' njsscan_report.sonar > external_report
 
+    - name: Calculate engagement name
+      if: ${{ !DOJO_REUPLOAD }}
+      run: |
+        echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}`" >> $GITHUB_ENV
+        echo "RE_UPLOAD=`echo false`" >> $GITHUB_ENV
+        
+    - name: Calculate engagement name
+      if: ${{ DOJO_REUPLOAD }}
+      run: |
+        echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ github.head_ref || github.ref_name }}`" >> $GITHUB_ENV
+        echo "RE_UPLOAD=`echo true`" >> $GITHUB_ENV
 
     - name: Prepare dojo ENV
       run: |
@@ -98,9 +113,10 @@ jobs:
         
         [engagement]
         source_code_management_uri = ${{ github.server_url }}/${{ github.repository }}/blob/${{ steps.get-commit-sha.outputs.sha }}
-        engagement_name = ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}
+        engagement_name = ${{ env.ENGAGEMENT_NAME }}
         commit_hash = ${{ steps.get-commit-sha.outputs.sha }}
         branch = ${{ github.head_ref || github.ref_name }}
+        reupload = ${{ env.RE_UPLOAD }}
         
         [scan]
         scan_type = ${{ env.SCAN_TYPE_DOJO }}
