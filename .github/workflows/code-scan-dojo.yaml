@@ -88,13 +88,13 @@ jobs:
     #     awk 'BEGIN{ FS=OFS=": " } /\"endColumn\"/{ match($NF, /^[0-9]+/); $NF=($NF-1) substr($NF, RLENGTH+1) }1' njsscan_report.sonar > external_report
 
     - name: Calculate engagement name
-      if: ${{ !DOJO_REUPLOAD }}
+      if: ${{ !inputs.DOJO_REUPLOAD }}
       run: |
         echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}`" >> $GITHUB_ENV
         echo "RE_UPLOAD=`echo false`" >> $GITHUB_ENV
         
     - name: Calculate engagement name
-      if: ${{ DOJO_REUPLOAD }}
+      if: ${{ inputs.DOJO_REUPLOAD }}
       run: |
         echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ github.head_ref || github.ref_name }}`" >> $GITHUB_ENV
         echo "RE_UPLOAD=`echo true`" >> $GITHUB_ENV
