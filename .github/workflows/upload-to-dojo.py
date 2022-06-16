@@ -135,7 +135,7 @@ print("starting")
 product_id = None
 
 # Read config file
-config = configparser()
+config = configparser.ConfigParser()
 config.read('dojo-env.ini')
 
 url = config['server']['url']
