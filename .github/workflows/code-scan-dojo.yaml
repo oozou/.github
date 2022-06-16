@@ -126,7 +126,7 @@ jobs:
 
     - name: Get Scripts
       run: |
-           curl https://raw.githubusercontent.com/oozou/.github/${{ github.head_ref || github.ref_name }}/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
+           curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
            ls -lart
            cat dojo-env.ini
            cat external_report
