@@ -116,11 +116,11 @@ jobs:
         engagement_name = ${{ env.ENGAGEMENT_NAME }}
         commit_hash = ${{ steps.get-commit-sha.outputs.sha }}
         branch = ${{ github.head_ref || github.ref_name }}
-        reupload = ${{ env.RE_UPLOAD }}
         
         [scan]
         scan_type = ${{ env.SCAN_TYPE_DOJO }}
         file_path = external_report
+        reupload = ${{ env.RE_UPLOAD }}
         EOF
 
 
