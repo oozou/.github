@@ -21,7 +21,14 @@ on:
         required: false
         type: boolean
         default: false
-         
+      DOJO_AUTO_ASSIGN:
+        required: false
+        type: boolean
+        default: false
+      DOJO_ASSIGNEE:
+        required: false
+        type: string
+        default: false
 jobs:
   Code-Scan:
     runs-on: oozou-eks-runner
@@ -121,23 +128,25 @@ jobs:
         scan_type = ${{ env.SCAN_TYPE_DOJO }}
         file_path = external_report
         reupload = ${{ env.RE_UPLOAD }}
+        
+        [notify]
+        auto_assign_enabled = ${{ inputs.DOJO_AUTO_ASSIGN }}    
         EOF
         ls -lart
 
-    - uses: actions/checkout@master
-      with:
-        name: oozou/actions-self-hosted-runner
-        ref: main
-        clean: false
-        path: 'action-self-host'
+    - name: Prepare dojo ENV (nofify)
+      if: ${{ inputs.DOJO_AUTO_ASSIGN }}
+      run: |
+        cat << EOF >> dojo-env.ini
+        assignee = ${{ inputs.DOJO_ASSIGNEE }}
+        EOF
 
     - name: Get Scripts
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
            ls -lart
-           # cat dojo-env.ini
+           cat dojo-env.ini
            # cat external_report
-           ls -lart action-self-host
 
     - name: Upload Result to Dojo
       run: |
