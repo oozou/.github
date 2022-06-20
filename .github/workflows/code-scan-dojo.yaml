@@ -123,6 +123,10 @@ jobs:
         reupload = ${{ env.RE_UPLOAD }}
         EOF
 
+    - uses: actions/checkout@master
+      with:
+        name: oozou/actions-self-hosted-runner
+        ref: main
 
     - name: Get Scripts
       run: |
