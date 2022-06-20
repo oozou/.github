@@ -136,7 +136,8 @@ jobs:
            ls -lart
            # cat dojo-env.ini
            # cat external_report
-           ls action-self-hosted-runner-data
+           cd action-self-hosted-runner-data
+           ls -lart
            mv action-self-hosted-runner-data/action-self-hosted-runner-data/repo_info.json repo_info.json
            ls -lart
 
