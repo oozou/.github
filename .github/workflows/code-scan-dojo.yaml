@@ -129,6 +129,7 @@ jobs:
         name: oozou/actions-self-hosted-runner
         ref: main
         clean: false
+        path: 'action-self-host'
 
     - name: Get Scripts
       run: |
@@ -136,7 +137,7 @@ jobs:
            ls -lart
            # cat dojo-env.ini
            # cat external_report
-           ls -lart
+           ls -lart action-self-host
 
     - name: Upload Result to Dojo
       run: |
