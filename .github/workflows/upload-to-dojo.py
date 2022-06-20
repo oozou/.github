@@ -2,6 +2,7 @@ import requests
 import json
 from datetime import datetime
 import configparser
+import json
 
 def find_product_by_name(host,api_key,product_name):
     headers = dict()
@@ -17,12 +18,12 @@ def find_product_by_name(host,api_key,product_name):
     else:
         return None
 
-def find_engagement(host,api_key,engagement_name,product_id):
+def find_engagement(host,api_key,engagement_name,product_id,engagement_status):
     headers = dict()
     AUTH_TOKEN = "Token " + str(api_key)
     headers['Authorization'] = AUTH_TOKEN
     print("\n==============Lists Engagement=================")
-    r = requests.get(host + "/engagements/?name="+str(engagement_name)+'&product='+str(product_id), headers=headers, verify=True)
+    r = requests.get(host + "/engagements/?name="+str(engagement_name)+'&product='+str(product_id)+'&status='+str(engagement_status), headers=headers, verify=True)
     print(r.text)
 
     r = json.loads(r.text)
@@ -50,7 +51,7 @@ def create_product(host,api_key,product_name,product_type,description):
 
     return r.status_code, r.text
 
-def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source_code_management_uri):
+def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source_code_management_uri,lead):
     print("\n==============Create Engagement================")
     headers = dict()
     json = dict()
@@ -58,7 +59,7 @@ def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source
     AUTH_TOKEN = "Token " + str(api_key)
     headers['Authorization'] = AUTH_TOKEN
     headers['content-type'] = "application/json"
-    print(headers)
+    # print(headers)
 
     json['name'] = str(name)
     json['product'] = str(product_id)
@@ -70,8 +71,9 @@ def create_engagement(host,api_key,name,product_id,commit_hash,branch_tag,source
     json['source_code_management_uri'] = ""
     json['engagement_type'] = "CI/CD"
     json['source_code_management_uri'] = source_code_management_uri
+    json['status'] = "In Progress"
 
-    json['lead'] = 2
+    json['lead'] = lead
 
     print(json)
     r = requests.post(host+"/engagements/", headers=headers, verify=True, json=json)
@@ -131,6 +133,32 @@ def reimport_scan_result(host,api_key,product_name,engagement_name,scan_type,fil
     print(r.text)
     return r.status_code, r.text
 
+def find_user_id_from_file(host, api_key, product_name, repo_info_file_path):
+    f = open(repo_info_file_path)
+    data = json.load(f)
+    f.close()
+    email = None
+
+    if product_name in data:
+        print("Key exists")
+        x = data[product_name]
+        email = data[product_name]['owner']
+    # print(email)
+
+    headers = dict()
+    AUTH_TOKEN = "Token " + str(api_key)
+    headers['Authorization'] = AUTH_TOKEN
+
+    print("\n==============List Users=================")
+    r = requests.get(host + "/users/?email="+str(email), headers=headers, verify=True)
+    # print(r.text)
+
+    r = json.loads(r.text)
+    if(r['count'] > 0):
+        return r['results']
+    else:
+        return None
+
 print("starting")
 product_id = None
 
@@ -152,6 +180,7 @@ branch = config['engagement']['branch']
 
 scan_type = config['scan']['scan_type']
 file_path = config['scan']['file_path']
+
 try:
     reupload_enabled = config['scan']['reupload']
 except:
@@ -171,18 +200,29 @@ print(product_id)
 
 # Don't create the existing engagement
 engagement_name_id = None
-query_result = find_engagement(url,api_key,engagement_name,product_id)
+query_result = find_engagement(url,api_key,engagement_name,product_id,'In Progress')
 print(query_result)
 
+# find user to assign engagement
+user_id = None
+user_data = find_user_id_from_file(url,api_key,product_name,"repo_info.json")
+if user_data != None:
+    # print(user_data)
+    user_id = user_data[0]['id']
+else:
+    user_id = 1
+print(user_id)
+
+
 # found engagement and try to reimport
-if (query_result != None and reupload_enabled == 'true'):
+if query_result is not None and reupload_enabled == 'true':
     print("Engagement is created already")
     engagement_name_id = query_result[0]['id']
     print(engagement_name_id)
     status_code, result = reimport_scan_result(url, api_key, product_name, engagement_name, scan_type, file_path)
 else:
     # not found and engagement or force to create a new engagement
-    status_code, result = create_engagement(url,api_key,engagement_name,product_id,commit_hash,branch,source_code_management_uri)
+    status_code, result = create_engagement(url,api_key,engagement_name,product_id,commit_hash,branch,source_code_management_uri,user_id)
     result = json.loads(result)
     engagement_id = result['id']
     print(engagement_id)
