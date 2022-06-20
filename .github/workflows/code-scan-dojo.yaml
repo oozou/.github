@@ -134,9 +134,10 @@ jobs:
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
            ls -lart
-           cat dojo-env.ini
-           cat external_report
-           ls -lart action-self-hosted-runner-data
+           # cat dojo-env.ini
+           # cat external_report
+           mv action-self-hosted-runner-data/repo_info.json repo_info.json
+           ls -lart
 
     - name: Upload Result to Dojo
       run: |
