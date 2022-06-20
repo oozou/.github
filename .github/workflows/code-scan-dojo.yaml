@@ -128,7 +128,6 @@ jobs:
       with:
         name: oozou/actions-self-hosted-runner
         ref: main
-        path: 'action-self-hosted-runner-data'
 
     - name: Get Scripts
       run: |
@@ -136,9 +135,6 @@ jobs:
            ls -lart
            # cat dojo-env.ini
            # cat external_report
-           cd action-self-hosted-runner-data
-           ls -lart
-           mv action-self-hosted-runner-data/action-self-hosted-runner-data/repo_info.json repo_info.json
            ls -lart
 
     - name: Upload Result to Dojo
