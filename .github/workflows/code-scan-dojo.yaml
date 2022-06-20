@@ -124,11 +124,11 @@ jobs:
         EOF
         ls -lart
 
-#     - uses: actions/checkout@master
-#       with:
-#         name: oozou/actions-self-hosted-runner
-#         ref: main
-#         path: 'action-self-hosted-runner-data'
+    - uses: actions/checkout@master
+      with:
+        name: oozou/actions-self-hosted-runner
+        ref: main
+        path: 'action-self-hosted-runner-data'
 
     - name: Get Scripts
       run: |
