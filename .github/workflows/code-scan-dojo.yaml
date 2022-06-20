@@ -128,6 +128,7 @@ jobs:
       with:
         name: oozou/actions-self-hosted-runner
         ref: main
+        clean: false
 
     - name: Get Scripts
       run: |
