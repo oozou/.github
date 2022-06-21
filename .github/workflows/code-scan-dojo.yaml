@@ -33,6 +33,10 @@ on:
         required: false
         type: string
         default: false
+      SEND_SLACK_NOTIFICATION:
+        required: false
+        type: boolean
+        default: false
 jobs:
   Code-Scan:
     runs-on: oozou-eks-runner
@@ -166,6 +170,7 @@ jobs:
         python upload-to-dojo.py
         
     - name: Send Slack noti
+      if: ${{ inputs.SEND_SLACK_NOTIFICATION }}
       run: |
-            if [ -z ${{env.TEST}} ]; then echo "Dont run"; else slack-notify.py -c dojo-env.ini;fi
+        slack-notify.py -c dojo-env.ini
             
