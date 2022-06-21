@@ -63,7 +63,7 @@ jobs:
             gem install brakeman
             if [ -z ${{inputs.SCAN_EXCLUDE}} ]; then export arg="";  else export arg="--skip-files ${{inputs.SCAN_EXCLUDE}}"; fi
             if [ "${{inputs.SCAN_INCLUDE}}" = "." ]; then export SCAN_INCLUDE="/";  else export SCAN_INCLUDE="${{inputs.SCAN_INCLUDE}}"; fi            
-            brakeman -A -q -f sonar -p . --only-files  "${SCAN_INCLUDE}" -o external_report --no-exit-on-warn --no-exit-on-error ${arg}
+            brakeman -A -q -f json -p . --only-files  "${SCAN_INCLUDE}" -o external_report --no-exit-on-warn --no-exit-on-error ${arg}
             echo "SCAN_TYPE_DOJO=$(echo 'Brakeman Scan')" >> $GITHUB_ENV
             ls -lart external_report
 
