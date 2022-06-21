@@ -167,5 +167,5 @@ jobs:
         
     - name: Send Slack noti
       run: |
-            if [ -z ${{secret.SLACK_WEBHOOK_URL}} ]; then echo "Dont run"; else slack-notify.py -c dojo-env.ini;fi
+            if [ -z ${{env.TEST}} ]; then echo "Dont run"; else slack-notify.py -c dojo-env.ini;fi
             
