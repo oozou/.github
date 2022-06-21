@@ -7,6 +7,10 @@ on:
         required: true
       DOJO_API_KEY:
         required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+      SLACK_CH:
+        required: false
     inputs:
       SCAN_TYPE:
         required: true
@@ -129,8 +133,15 @@ jobs:
         file_path = external_report
         reupload = ${{ env.RE_UPLOAD }}
         
+        [report]
+        report_summary_path = output.csv
+
+        [slack]
+        webhook = ${{ secrets.SLACK_WEBHOOK_URL }}
+        channel = ${{ secrets.SLACK_CH }}
+        
         [notify]
-        auto_assign_enabled = ${{ inputs.DOJO_AUTO_ASSIGN }}    
+        auto_assign_enabled = ${{ inputs.DOJO_AUTO_ASSIGN }}
         EOF
         ls -lart
 
