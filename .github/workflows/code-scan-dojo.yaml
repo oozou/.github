@@ -164,4 +164,7 @@ jobs:
       run: |
         python --version
         python upload-to-dojo.py
-        python slack-notify.py -c dojo-env.ini
+        
+    - name: Send Slack noti
+      run: |
+            if [ -z ${{secret.SLACK_WEBHOOK_URL}} ]; then python slack-notify.py -c dojo-env.ini;
