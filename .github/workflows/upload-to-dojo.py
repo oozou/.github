@@ -220,8 +220,8 @@ print(user_id)
 # found engagement and try to reimport
 if query_result is not None and reupload_enabled == 'true':
     print("Engagement is created already")
-    engagement_name_id = query_result[0]['id']
-    print(engagement_name_id)
+    engagement_id = query_result[0]['id']
+    print(engagement_id)
     status_code, result = reimport_scan_result(url, api_key, product_name, engagement_name, scan_type, file_path)
 else:
     # not found and engagement or force to create a new engagement
@@ -238,7 +238,6 @@ data = open(file_path,'r')
 data = json.load(data)
 issue_count = len(data)
 print(issue_count)
-
 
 report_summary = open("output.csv", "a")
 report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
