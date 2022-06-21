@@ -242,5 +242,5 @@ print(issue_count)
 report_summary = open("output.csv", "a")
 report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
 source_code_management_uri = source_code_management_uri.split("blob", 1)[0]
-report_summary.write(str(source_code_management_uri)+","+str(issue_count)+","+str(email)+","+str(product_id)+str(engagement_id)+"\n")
+report_summary.write(str(source_code_management_uri)+","+str(issue_count)+","+str(email)+","+str(product_id)+","+str(engagement_id)+"\n")
 report_summary.close()
