@@ -240,8 +240,7 @@ issue_count = len(data)
 print(issue_count)
 
 
-dojo_product_id = 5
 report_summary = open("output.csv", "a")
 report_summary.write("repo,count,owner,dojo_product_id\n")
-report_summary.write(source_code_management_uri+","+str(issue_count)+","+email+","+str(dojo_product_id)+"\n")
+report_summary.write(str(source_code_management_uri)+","+str(issue_count)+","+str(email)+","+str(product_id)+"\n")
 report_summary.close()
