@@ -155,6 +155,7 @@ jobs:
     - name: Get Scripts
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
+           curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/slack-notify.py -o slack-notify.py
            ls -lart
            cat dojo-env.ini
            # cat external_report
@@ -163,3 +164,4 @@ jobs:
       run: |
         python --version
         python upload-to-dojo.py
+        python slack-notify.py -c dojo-env.ini
