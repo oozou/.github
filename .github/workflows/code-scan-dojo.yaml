@@ -172,5 +172,5 @@ jobs:
     - name: Send Slack noti
       if: ${{ inputs.SEND_SLACK_NOTIFICATION }}
       run: |
-        slack-notify.py -c dojo-env.ini
+        python slack-notify.py -c dojo-env.ini
             
