@@ -231,3 +231,17 @@ else:
     engagement_id = result['id']
     print(engagement_id)
     status_code, result = upload_scan_result(url, api_key, product_name, engagement_name, scan_type, file_path)
+
+
+# Output to report summary.
+data = open(file_path,'r')
+data = json.load(data)
+issue_count = len(data)
+print(issue_count)
+
+
+dojo_product_id = 5
+report_summary = open("output.csv", "a")
+report_summary.write("repo,count,owner,dojo_product_id\n")
+report_summary.write(source_code_management_uri+","+str(issue_count)+","+email+","+str(dojo_product_id)+"\n")
+report_summary.close()
