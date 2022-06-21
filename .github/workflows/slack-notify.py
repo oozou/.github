@@ -26,8 +26,8 @@ class SecretScanSlackMessage:
         return {
             "channel": self.channel,
             "icon_emoji": self.icon_emoji,
-            "username": "secret-scan",
-            "text": "Secret Scan Summary!",
+            "username": "code-scan",
+            "text": "Code Scan Summary!",
             "blocks": [
                 self.HEADER_BLOCK,
                 *self.get_section_block()
