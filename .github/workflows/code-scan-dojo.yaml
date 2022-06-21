@@ -7,6 +7,10 @@ on:
         required: true
       DOJO_API_KEY:
         required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+      SLACK_CH:
+        required: false
     inputs:
       SCAN_TYPE:
         required: true
@@ -16,8 +20,23 @@ on:
         type: string       
       SCAN_EXCLUDE:
         required: false
-        type: string            
-         
+        type: string 
+      DOJO_REUPLOAD:
+        required: false
+        type: boolean
+        default: false
+      DOJO_AUTO_ASSIGN:
+        required: false
+        type: boolean
+        default: false
+      DOJO_ASSIGNEE:
+        required: false
+        type: string
+        default: false
+      SEND_SLACK_NOTIFICATION:
+        required: false
+        type: boolean
+        default: false
 jobs:
   Code-Scan:
     runs-on: oozou-eks-runner
@@ -48,7 +67,7 @@ jobs:
             gem install brakeman
             if [ -z ${{inputs.SCAN_EXCLUDE}} ]; then export arg="";  else export arg="--skip-files ${{inputs.SCAN_EXCLUDE}}"; fi
             if [ "${{inputs.SCAN_INCLUDE}}" = "." ]; then export SCAN_INCLUDE="/";  else export SCAN_INCLUDE="${{inputs.SCAN_INCLUDE}}"; fi            
-            brakeman -A -q -f sonar -p . --only-files  "${SCAN_INCLUDE}" -o external_report --no-exit-on-warn --no-exit-on-error ${arg}
+            brakeman -A -q -f json -p . --only-files  "${SCAN_INCLUDE}" -o external_report --no-exit-on-warn --no-exit-on-error ${arg}
             echo "SCAN_TYPE_DOJO=$(echo 'Brakeman Scan')" >> $GITHUB_ENV
             ls -lart external_report
 
@@ -83,6 +102,17 @@ jobs:
     #   run: |
     #     awk 'BEGIN{ FS=OFS=": " } /\"endColumn\"/{ match($NF, /^[0-9]+/); $NF=($NF-1) substr($NF, RLENGTH+1) }1' njsscan_report.sonar > external_report
 
+    - name: Calculate engagement name
+      if: ${{ !inputs.DOJO_REUPLOAD }}
+      run: |
+        echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}`" >> $GITHUB_ENV
+        echo "RE_UPLOAD=`echo false`" >> $GITHUB_ENV
+        
+    - name: Calculate engagement name
+      if: ${{ inputs.DOJO_REUPLOAD }}
+      run: |
+        echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ github.head_ref || github.ref_name }}`" >> $GITHUB_ENV
+        echo "RE_UPLOAD=`echo true`" >> $GITHUB_ENV
 
     - name: Prepare dojo ENV
       run: |
@@ -98,19 +128,38 @@ jobs:
         
         [engagement]
         source_code_management_uri = ${{ github.server_url }}/${{ github.repository }}/blob/${{ steps.get-commit-sha.outputs.sha }}
-        engagement_name = ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}
+        engagement_name = ${{ env.ENGAGEMENT_NAME }}
         commit_hash = ${{ steps.get-commit-sha.outputs.sha }}
         branch = ${{ github.head_ref || github.ref_name }}
         
         [scan]
         scan_type = ${{ env.SCAN_TYPE_DOJO }}
         file_path = external_report
-        EOF
+        reupload = ${{ env.RE_UPLOAD }}
+        
+        [report]
+        report_summary_path = output.csv
 
+        [slack]
+        webhook = ${{ secrets.SLACK_WEBHOOK_URL }}
+        channel = ${{ secrets.SLACK_CH }}
+        
+        [notify]
+        auto_assign_enabled = ${{ inputs.DOJO_AUTO_ASSIGN }}
+        EOF
+        ls -lart
+
+    - name: Prepare dojo ENV (nofify)
+      if: ${{ inputs.DOJO_AUTO_ASSIGN }}
+      run: |
+        cat << EOF >> dojo-env.ini
+        assignee = ${{ inputs.DOJO_ASSIGNEE }}
+        EOF
 
     - name: Get Scripts
       run: |
            curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/upload-to-dojo.py -o upload-to-dojo.py
+           curl https://raw.githubusercontent.com/oozou/.github/develop/.github/workflows/slack-notify.py -o slack-notify.py
            ls -lart
            cat dojo-env.ini
            cat external_report
@@ -119,3 +168,9 @@ jobs:
       run: |
         python --version
         python upload-to-dojo.py
+        
+    - name: Send Slack noti
+      if: ${{ inputs.SEND_SLACK_NOTIFICATION }}
+      run: |
+        python slack-notify.py -c dojo-env.ini
+            
