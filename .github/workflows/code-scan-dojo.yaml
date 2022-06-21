@@ -158,7 +158,7 @@ jobs:
            curl https://raw.githubusercontent.com/oozou/.github/dojo/.github/workflows/slack-notify.py -o slack-notify.py
            ls -lart
            cat dojo-env.ini
-           # cat external_report
+           cat external_report
 
     - name: Upload Result to Dojo
       run: |
