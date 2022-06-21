@@ -10,7 +10,7 @@ class SecretScanSlackMessage:
         "type": "header",
         "text": {
             "type": "plain_text",
-            "text": "Secret Scan Summary " + date.today().strftime("%d/%m/%Y")
+            "text": "Code Scan Summary " + date.today().strftime("%d/%m/%Y")
         },
     }
     DIVIDER_BLOCK = {"type": "divider"}
