@@ -60,7 +60,6 @@ class Engagement(Defectdojo):
         print("=======Creating A new Engagement========")
         return super().post(json)
 
-
 class Product(Defectdojo):
     def __init__(self, url, api_key):
         super().__init__(url + "/products/", api_key)
@@ -78,31 +77,27 @@ class ScanResult(Defectdojo):
     def __init__(self, url, api_key):
         super().__init__(url, api_key)
 
+    def prepare_data(self, product_name, engagement_name, scan_type):
+        json = dict()
+        json['minimum_severity'] = "Info"
+        json['scan_date'] = datetime.now().strftime("%Y-%m-%d")
+        json['verified'] = False
+        json['tags'] = "automated"
+        json['active'] = True
+        json['engagement_name'] = engagement_name
+        json['product_name'] = product_name
+        json['scan_type'] = scan_type
+        return json
+
     def upload(self, product_name, engagement_name, scan_type, file_path):
         self.URL = self.URL + "/import-scan/"
-        json = dict()
-        json['minimum_severity'] = "Info"
-        json['scan_date'] = datetime.now().strftime("%Y-%m-%d")
-        json['verified'] = False
-        json['tags'] = "automated"
-        json['active'] = True
-        json['engagement_name'] = engagement_name
-        json['product_name'] = product_name
-        json['scan_type'] = scan_type
-        return self.post(json, x_file=file_path)
+        x_json = self.prepare_data(product_name, engagement_name, scan_type)
+        return self.post(x_json, x_file=file_path)
 
     def reupload(self, product_name, engagement_name, scan_type, file_path):
-        self.URL = self.URL + "/import-scan/"
-        json = dict()
-        json['minimum_severity'] = "Info"
-        json['scan_date'] = datetime.now().strftime("%Y-%m-%d")
-        json['verified'] = False
-        json['tags'] = "automated"
-        json['active'] = True
-        json['engagement_name'] = engagement_name
-        json['product_name'] = product_name
-        json['scan_type'] = scan_type
-        return super().post(json, x_file=file_path)
+        self.URL = self.URL + "/reimport-scan/"
+        x_json = self.prepare_data(product_name, engagement_name, scan_type)
+        return super().post(x_json, x_file=file_path)
 
 
 class User(Defectdojo):
