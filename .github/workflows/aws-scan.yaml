@@ -1,0 +1,34 @@
+name: AWS Security Scan Workflow
+
+on:
+  workflow_call:
+    inputs:
+      AWS_ROLE:
+        required: true
+        type: string         
+      AWS_REGION:
+        required: true
+        type: string       
+      AWS_ENVIRONMENT:
+        required: true
+        type: string  
+  
+permissions:
+      id-token: write
+      contents: read    # This is required for actions/checkout
+jobs:
+  aws-security-scan:
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: {{inputs.AWS_ROLE}}
+          role-session-name: awsrolesession
+          aws-region: {{inputs.AWS_REGION}}
+          
+      - name: scan
+        run: |
+          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN gcr.io/xenon-container-350901/prowler:latest -r us-east-2 -f us-east-2 -M csv,json,html -c check32
+
+        
+
