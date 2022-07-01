@@ -18,17 +18,80 @@ permissions:
       contents: read    # This is required for actions/checkout
 jobs:
   aws-security-scan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: {{inputs.AWS_ROLE}}
-          role-session-name: awsrolesession
-          aws-region: {{inputs.AWS_REGION}}
+        with:       
+          role-to-assume: ${{ inputs.AWS_ROLE }}
+          aws-region: ${{ inputs.AWS_REGION }}
           
       - name: scan
+        continue-on-error: true
         run: |
-          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN gcr.io/xenon-container-350901/prowler:latest -r us-east-2 -f us-east-2 -M csv,json,html -c check32
+          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN gcr.io/xenon-container-350901/prowler:latest -r us-east-2 -f us-east-2 -M csv,json,html -c check32,check33,check34,check35,check36,check37,check37,check38 || true
+          mv *.json report.json
+          
+      - id: set-matrix  
+        run: |
+          cat << EOF > config.ini
+          [report]
+          report_path = report.json
+          group_key = Service
+          EOF
+          curl https://raw.githubusercontent.com/poc-lycbrina/.github/main/.github/workflows/prowler_report_split.py -o prowler_report_split.py
+          python prowler_report_split.py -c config.ini
+          rm -rf report.json 
+          ls *.json > summary
+          echo "::set-output name=matrix::$( cat summary | jq -R -s -c 'split("\n")[:-1]')"s
 
-        
+      - uses: actions/upload-artifact@v3
+        with:
+          name: report
+          path: |
+            ./*.json
 
+  defectdojo-upload:
+    needs: aws-security-scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        manifest: ${{ fromJson(needs.aws-security-scan.outputs.matrix) }}  
+              
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: report
+          path: .      
+      - name: check report
+        run: |
+          cat ${{ matrix.manifest }}
+          cat << EOF > dojo-env.ini
+          [server]
+          url = ${{ secrets.DOJO_URL }}
+          api_key = ${{ secrets.DOJO_API_KEY }}
+          [product]
+          product_name = oozou-internal
+          description = oozou-internal
+          product_type = 1
+          [engagement]
+          source_code_management_uri = 
+          engagement_name = oozou-sandbox-aws-dev
+          test_name = ${{ matrix.manifest }}
+          commit_hash =
+          branch =
+          [scan]
+          scan_type = AWS Prowler Scan
+          file_path = ${{ matrix.manifest }}
+          reupload = true
+
+          [notify]
+          auto_assign_enabled = false
+          EOF
+          curl https://raw.githubusercontent.com/poc-lycbrina/.github/main/.github/workflows/upload_dojo.py -o upload_dojo.py
+          python3 upload_dojo.py
+          
+          
+          
