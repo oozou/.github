@@ -1,7 +1,5 @@
 import json
 from itertools import groupby
-from jinja2 import Template
-from jinja2 import Environment, FileSystemLoader
 import sys, getopt
 import configparser
 
