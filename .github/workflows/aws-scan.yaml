@@ -58,6 +58,7 @@ jobs:
     needs: aws-security-scan
     runs-on: oozou-eks-runner
     strategy:
+      max-parallel: 1
       matrix:
         manifest: ${{ fromJson(needs.aws-security-scan.outputs.matrix) }}  
               
