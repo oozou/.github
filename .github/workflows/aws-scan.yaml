@@ -12,7 +12,9 @@ on:
       AWS_ENVIRONMENT:
         required: true
         type: string  
-  
+      PROJECT_NAME:
+        required: true
+        type: string  
 permissions:
       id-token: write
       contents: read    # This is required for actions/checkout
@@ -26,12 +28,11 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:       
           role-to-assume: ${{ inputs.AWS_ROLE }}
-          aws-region: ${{ inputs.AWS_REGION }}
           
       - name: scan
         continue-on-error: true
         run: |
-          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN gcr.io/xenon-container-350901/prowler:latest -r ${{ inputs.AWS_REGION }} -f ${{ inputs.AWS_REGION }} -M csv,json,html -c check32,check33,check34,check35,check36,check37,check37,check38 || true
+          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN 562563527952.dkr.ecr.us-east-2.amazonaws.com/aws-prowler:latest -r ${{ inputs.AWS_REGION }} -f ${{ inputs.AWS_REGION }} -M json -g oozou-${{ AWS_ENVIRONMENT }} || true
           mv *.json report.json
           
       - id: set-matrix  
@@ -67,18 +68,18 @@ jobs:
           path: .      
       - name: check report
         run: |
-          cat ${{ matrix.manifest }}
+          export test_name=`basename ${{ matrix.manifest }} .json`
           cat << EOF > dojo-env.ini
           [server]
           url = ${{ secrets.DOJO_URL }}
           api_key = ${{ secrets.DOJO_API_KEY }}
           [product]
-          product_name = oozou-internal
-          description = oozou-internal
+          product_name = ${{ inputs.PROJECT_NAME }}
+          description = ${{ inputs.PROJECT_NAME }}
           product_type = 1
           [engagement]
           source_code_management_uri = 
-          engagement_name = oozou-sandbox-aws-dev
+          engagement_name = ${{ inputs.PROJECT_NAME }}-aws-${{ inputs.AWS_REGION }}
           test_name = ${{ matrix.manifest }}
           commit_hash =
           branch =
