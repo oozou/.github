@@ -41,7 +41,7 @@ jobs:
           report_path = report.json
           group_key = Service
           EOF
-          curl https://raw.githubusercontent.com/poc-lycbrina/.github/main/.github/workflows/prowler_report_split.py -o prowler_report_split.py
+          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/aws-prowler/prowler_report_split.py -o prowler_report_split.py
           python prowler_report_split.py -c config.ini
           rm -rf report.json 
           ls *.json > summary
@@ -90,7 +90,7 @@ jobs:
           [notify]
           auto_assign_enabled = false
           EOF
-          curl https://raw.githubusercontent.com/poc-lycbrina/.github/main/.github/workflows/upload_dojo.py -o upload_dojo.py
+          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo.py -o upload_dojo.py
           python3 upload_dojo.py
           
           
