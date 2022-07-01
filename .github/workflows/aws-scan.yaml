@@ -87,7 +87,7 @@ jobs:
           [engagement]
           source_code_management_uri = 
           engagement_name = ${{ inputs.PROJECT_NAME }}-aws-${{ inputs.AWS_REGION }}
-          test_name = ${{ matrix.manifest }}
+          test_name = $test_name
           commit_hash =
           branch =
           [scan]
