@@ -285,8 +285,8 @@ if __name__ == "__main__":
         data = open(getattr(config_data, 'file_path'), "r")
         issue_count = len(json.load(data))
         print(issue_count)
-
-        report_summary = open("getattr(config_data, 'report_summary')", "a")
+        print(getattr(config_data, 'report_summary'))
+        report_summary = open(getattr(config_data, 'report_summary'), "a")
         report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
         source_code_management_uri = getattr(config_data, 'source_code_management_uri').split("blob", 1)[0]
         report_summary.write(
