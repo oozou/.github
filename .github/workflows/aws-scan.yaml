@@ -96,7 +96,7 @@ jobs:
           reupload = true
 
           [report]
-          report_summary_path
+          report_summary_path =
 
           [notify]
           auto_assign_enabled = false
