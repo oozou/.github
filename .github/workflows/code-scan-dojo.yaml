@@ -161,7 +161,7 @@ jobs:
 
     - name: Get Scripts
       run: |
-           curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo-v2.py-o upload-to-dojo.py
+           curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo-v2.py -o upload-to-dojo.py
            curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/notification/slack-notify.py -o slack-notify.py
            ls -lart
            cat dojo-env.ini
