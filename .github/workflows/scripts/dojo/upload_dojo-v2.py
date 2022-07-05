@@ -151,6 +151,7 @@ class ConfigData:
 
         self.scan_type = config['scan']['scan_type']
         self.file_path = config['scan']['file_path']
+        self.report_summary = config['report']['report_summary_path']
 
         
 
@@ -279,17 +280,18 @@ if __name__ == "__main__":
         )
         print("upload status is " + str(status))
 
-    # print("=====Output the result to CSV=====")
-    # data = open(getattr(config_data, 'file_path'), "r")
-    # issue_count = len(json.load(data))
-    # print(issue_count)
+    if(getattr(config_data, 'report_summary')):
+        print("=====Output the result to CSV=====")
+        data = open(getattr(config_data, 'file_path'), "r")
+        issue_count = len(json.load(data))
+        print(issue_count)
 
-    # report_summary = open("output.csv", "a")
-    # report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
-    # source_code_management_uri = getattr(config_data, 'source_code_management_uri').split("blob", 1)[0]
-    # report_summary.write(
-    #     str(getattr(config_data, 'source_code_management_uri')) + "," + str(issue_count) + ","
-    #     + str(getattr(config_data, 'email')) + ","
-    #     + str(product_id) + "," + str(engagement_id) + "\n")
-    # report_summary.close()
-    # print("=====Done Output the result to CSV=====")
+        report_summary = open("getattr(config_data, 'report_summary')", "a")
+        report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
+        source_code_management_uri = getattr(config_data, 'source_code_management_uri').split("blob", 1)[0]
+        report_summary.write(
+            str(getattr(config_data, 'source_code_management_uri')) + "," + str(issue_count) + ","
+            + str(getattr(config_data, 'email')) + ","
+            + str(product_id) + "," + str(engagement_id) + "\n")
+        report_summary.close()
+        print("=====Done Output the result to CSV=====")

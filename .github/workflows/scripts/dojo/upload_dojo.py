@@ -7,17 +7,22 @@ import json
 def find_product_by_name(host, api_key, product_name):
     headers = dict()
     AUTH_TOKEN = "Token " + str(api_key)
+    print(AUTH_TOKEN)
     headers['Authorization'] = AUTH_TOKEN
+    headers['content-type'] = "application/json"
+    print(host + "/products/?name=" + str(product_name))
     print("\n==============Lists Products=================")
     r = requests.get(host + "/products/?name=" + str(product_name), headers=headers, verify=True)
-    print(r.text)
+    for key, value in r.__dict__.items():
+        print(key)
+        print(value)
+        print('------------------')
 
     r = json.loads(r.text)
     if (r['count'] > 0):
         return r['results']
     else:
         return None
-
 
 def find_engagement(host, api_key, engagement_name, product_id, engagement_status):
     headers = dict()
@@ -35,13 +40,14 @@ def find_engagement(host, api_key, engagement_name, product_id, engagement_statu
     else:
         return None
 
-def find_test(host, api_key, title, engagement_id):
+def find_test(host, api_key, engagement_name, product_id, engagement_status):
     headers = dict()
     AUTH_TOKEN = "Token " + str(api_key)
     headers['Authorization'] = AUTH_TOKEN
-    print("\n==============Lists Test=================")
+    print("\n==============Lists Engagement=================")
     r = requests.get(
-        host + "/tests/?title=" + str(title) + '&engagement=' + str(engagement_id), headers=headers, verify=True)
+        host + "/engagements/?name=" + str(engagement_name) + '&product=' + str(product_id) + '&status=' + str(
+            engagement_status), headers=headers, verify=True)
     print(r.text)
 
     r = json.loads(r.text)
@@ -148,7 +154,7 @@ def create_test(host, api_key, title, engagement_id, test_type_id, commit_hash="
     print(r.text)
     return r.status_code, r.text
 
-def upload_scan_result(host, api_key, product_name, engagement_name, test_title, scan_type, file_path):
+def upload_scan_result(host, api_key, product_name, engagement_name, scan_type, file_path):
     print("\n===============Upload Scan Results============")
     headers = dict()
 
@@ -167,7 +173,6 @@ def upload_scan_result(host, api_key, product_name, engagement_name, test_title,
     json['active'] = True
     json['engagement_name'] = engagement_name
     json['product_name'] = product_name
-    json['test_title'] = test_title
     json['scan_type'] = scan_type
 
     r = requests.post(host + "/import-scan/", headers=headers, verify=True, data=json, files=files)
@@ -241,6 +246,7 @@ branch = config['engagement']['branch']
 
 scan_type = config['scan']['scan_type']
 file_path = config['scan']['file_path']
+report_summary = config['report']['report_summary_path']
 
 try:
     reupload_enabled = config['scan']['reupload']
@@ -287,13 +293,9 @@ if query_result is not None and reupload_enabled == 'true':
     print("Engagement is created already")
     engagement_id = query_result[0]['id']
     print(engagement_id)
-    test_query_result = find_test(url, api_key, test_name, engagement_id)
-    if (test_query_result != None):
-        print("test is created already")
-        test_id = test_query_result[0]['id']
-    else:
-        test_status_code, test_result = create_test(url, api_key,test_name, engagement_id,scan_type_id)
-        test_id = int(json.loads(test_result)['id'])
+    test_status_code, test_result = create_test(url, api_key,test_name, engagement_id,scan_type_id)
+    test_id = int(json.loads(test_result)['id'])
+
     status_code, result = reimport_scan_result(url, api_key, product_name, engagement_name, test_id, scan_type, file_path)
 else:
     # not found and engagement or force to create a new engagement
@@ -302,19 +304,18 @@ else:
     result = json.loads(result)
     engagement_id = result['id']
     print(engagement_id)
-    test_status_code, test_result = create_test(url, api_key,test_name, engagement_id,scan_type_id)
-    test_id = int(json.loads(test_result)['id'])
-    status_code, result = reimport_scan_result(url, api_key, product_name, engagement_name, test_id, scan_type, file_path)
+    create_test(url, api_key,test_name, engagement_id,scan_type_id)
+    #status_code, result = upload_scan_result(url, api_key, product_name, engagement_name, scan_type, file_path)
 
-
+if(report_summary):
 # Output to report summary.
-#data = open(file_path,'r')
-#data = json.load(data)
-#issue_count = len(data)
-#print(issue_count)
+    data = open(file_path,'r')
+    data = json.load(data)
+    issue_count = len(data)
+    print(issue_count)
 
-#report_summary = open("output.csv", "a")
-#report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
-#source_code_management_uri = source_code_management_uri.split("blob", 1)[0]
-#report_summary.write(str(source_code_management_uri)+","+str(issue_count)+","+str(email)+","+str(product_id)+","+str(engagement_id)+"\n")
-#report_summary.close()
+    report_summary = open(report_summary, "a")
+    report_summary.write("repo,count,owner,dojo_product_id,dojo_engagement_id\n")
+    source_code_management_uri = source_code_management_uri.split("blob", 1)[0]
+    report_summary.write(str(source_code_management_uri)+","+str(issue_count)+","+str(email)+","+str(product_id)+","+str(engagement_id)+"\n")
+    report_summary.close()

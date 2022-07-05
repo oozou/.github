@@ -95,10 +95,13 @@ jobs:
           file_path = ${{ matrix.manifest }}
           reupload = true
 
+          [report]
+          report_summary_path
+
           [notify]
           auto_assign_enabled = false
           EOF
-          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo.py -o upload_dojo.py
+          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo-v2.py -o upload_dojo.py
           python3 upload_dojo.py
           
           
