@@ -106,6 +106,7 @@ jobs:
       if: ${{ !inputs.DOJO_REUPLOAD }}
       run: |
         echo "ENGAGEMENT_NAME=`echo ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}`" >> $GITHUB_ENV
+        echo "TEST_NAME=`echo ${{ github.repository }}-${{ steps.get-commit-sha.outputs.sha }}`" >> $GITHUB_ENV
         echo "RE_UPLOAD=`echo false`" >> $GITHUB_ENV
         
     - name: Calculate engagement name
@@ -129,6 +130,7 @@ jobs:
         [engagement]
         source_code_management_uri = ${{ github.server_url }}/${{ github.repository }}/blob/${{ steps.get-commit-sha.outputs.sha }}
         engagement_name = ${{ env.ENGAGEMENT_NAME }}
+        test_name = ${{ env.TEST_NAME }}
         commit_hash = ${{ steps.get-commit-sha.outputs.sha }}
         branch = ${{ github.head_ref || github.ref_name }}
         
