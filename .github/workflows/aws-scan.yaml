@@ -1,0 +1,110 @@
+name: AWS Security Scan Workflow
+
+on:
+  workflow_call:
+    inputs:
+      AWS_ROLE:
+        required: true
+        type: string         
+      AWS_REGION:
+        required: true
+        type: string       
+      AWS_ENVIRONMENT:
+        required: true
+        type: string  
+      PROJECT_NAME:
+        required: true
+        type: string  
+permissions:
+      id-token: write
+      contents: read    # This is required for actions/checkout
+jobs:
+  aws-security-scan:
+    runs-on: oozou-eks-runner
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:       
+          role-to-assume: ${{ inputs.AWS_ROLE }}
+          aws-region: us-east-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registries: 562563527952
+          
+      - name: scan
+        continue-on-error: true
+        run: |
+          chmod -R 777 .
+          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN 562563527952.dkr.ecr.us-east-2.amazonaws.com/aws-prowler:latest -r ${{ inputs.AWS_REGION }} -f ${{ inputs.AWS_REGION }} -M json -g oozou-${{ inputs.AWS_ENVIRONMENT }} || true
+          mv *.json report.json
+          
+      - id: set-matrix  
+        run: |
+          cat << EOF > config.ini
+          [report]
+          report_path = report.json
+          group_key = Service
+          EOF
+          curl https://raw.githubusercontent.com/oozou/.github/main/.github/workflows/scripts/aws-prowler/prowler_report_split.py -o prowler_report_split.py
+          python prowler_report_split.py -c config.ini
+          rm -rf report.json 
+          ls *.json > summary
+          echo "::set-output name=matrix::$( cat summary | jq -R -s -c 'split("\n")[:-1]')"s
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: report
+          path: |
+            ./*.json
+
+  defectdojo-upload:
+    needs: aws-security-scan
+    runs-on: oozou-eks-runner
+    strategy:
+      max-parallel: 1
+      matrix:
+        manifest: ${{ fromJson(needs.aws-security-scan.outputs.matrix) }}  
+              
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: report
+          path: .      
+      - name: check report
+        run: |
+          export test_name=`basename ${{ matrix.manifest }} .json`
+          cat << EOF > dojo-env.ini
+          [server]
+          url = ${{ secrets.DOJO_URL }}
+          api_key = ${{ secrets.DOJO_API_KEY }}
+          [product]
+          product_name = ${{ inputs.PROJECT_NAME }}-AWS
+          description = ${{ inputs.PROJECT_NAME }}-AWS
+          product_type = 1
+          [engagement]
+          source_code_management_uri = 
+          engagement_name = ${{ inputs.PROJECT_NAME }}-aws-${{ inputs.AWS_ENVIRONMENT }}
+          test_name = $test_name
+          commit_hash =
+          branch =
+          [scan]
+          scan_type = AWS Prowler Scan
+          file_path = ${{ matrix.manifest }}
+          reupload = true
+
+          [report]
+          report_summary_path =
+
+          [notify]
+          auto_assign_enabled = false
+          EOF
+          curl https://raw.githubusercontent.com/oozou/.github/main/.github/workflows/scripts/dojo/upload_dojo-v2.py -o upload_dojo.py
+          python3 upload_dojo.py
+          
+          
+          
