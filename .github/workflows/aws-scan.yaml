@@ -34,7 +34,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
         with:
-          registries: 562563527952.dkr.ecr.us-east-2.amazonaws.com
+          registries: 562563527952
           
       - name: scan
         continue-on-error: true
