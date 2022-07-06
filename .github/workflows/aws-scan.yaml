@@ -50,7 +50,7 @@ jobs:
           report_path = report.json
           group_key = Service
           EOF
-          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/aws-prowler/prowler_report_split.py -o prowler_report_split.py
+          curl https://raw.githubusercontent.com/oozou/.github/main/.github/workflows/scripts/aws-prowler/prowler_report_split.py -o prowler_report_split.py
           python prowler_report_split.py -c config.ini
           rm -rf report.json 
           ls *.json > summary
@@ -83,8 +83,8 @@ jobs:
           url = ${{ secrets.DOJO_URL }}
           api_key = ${{ secrets.DOJO_API_KEY }}
           [product]
-          product_name = ${{ inputs.PROJECT_NAME }}
-          description = ${{ inputs.PROJECT_NAME }}
+          product_name = ${{ inputs.PROJECT_NAME }}-AWS
+          description = ${{ inputs.PROJECT_NAME }}-AWS
           product_type = 1
           [engagement]
           source_code_management_uri = 
@@ -103,7 +103,7 @@ jobs:
           [notify]
           auto_assign_enabled = false
           EOF
-          curl https://raw.githubusercontent.com/oozou/.github/aws-scan-pipeline/.github/workflows/scripts/dojo/upload_dojo-v2.py -o upload_dojo.py
+          curl https://raw.githubusercontent.com/oozou/.github/main/.github/workflows/scripts/dojo/upload_dojo-v2.py -o upload_dojo.py
           python3 upload_dojo.py
           
           
