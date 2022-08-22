@@ -1,0 +1,84 @@
+<ac:structured-macro ac:name="toc" ac:schema-version="1" data-layout="default" ac:local-id="7ef20bd6-aa6b-49d0-99a3-4c19d8b76e2a" ac:macro-id="e6bc74aedebda811664227117f17d0e4"><ac:parameter ac:name="minLevel">1</ac:parameter><ac:parameter ac:name="maxLevel">7</ac:parameter></ac:structured-macro>
+{%- for project in projects %}
+<h1>{{project.name}}</h1>
+<table data-layout="default" ac:local-id="49319cb0-9be4-4014-ba8d-10297854f589"><colgroup><col style="width: 124.0px;" /><col style="width: 123.0px;" /><col style="width: 124.0px;" /><col style="width: 124.0px;" /><col style="width: 124.0px;" /></colgroup>
+<tbody>
+<tr>
+<th>
+<p><strong>Name</strong></p></th>
+<th>
+<p><strong>SubResource Name</strong></p></th>
+<th>
+<p>Monthly Qty</p></th>
+<th>
+<p>Unit</p></th>
+<th>
+<p>Monthly Cost</p></th></tr>
+{%- for resource in project.breakdown.resources %}
+<tr>
+<td data-highlight-colour="#b3bac5" colspan="5">
+<p>{{resource.name}}</p></td></tr>
+{%- for costComponent in resource.costComponents %}
+<tr>
+<td>
+<p>{{costComponent.name}}</p></td>
+<td>
+<p /></td>
+<td><p>{% if costComponent.monthlyQuantity == None %}Cost depends on usage{% else %}{{costComponent.monthlyQuantity}}{% endif %}</p></td>
+<td><p>{% if costComponent.monthlyQuantity == None %}${{costComponent.price}} per {{costComponent.unit}}{% else %}{{costComponent.unit}}{% endif %}</p></td>
+<td>
+{% if costComponent.monthlyQuantity == None %}<p />
+{% else %}
+<p>${{costComponent.monthlyCost}}</p>{% endif %}</td></tr>
+{% if resource.subresources %}
+{%- for subresource in resource.subresources %}
+<tr>
+<td data-highlight-colour="#f4f5f7">
+<p /></td>
+<td data-highlight-colour="#f4f5f7" colspan="4">
+<p>{{subresource.name}}</p></td></tr>
+{%- for subCostComponent in subresource.costComponents %}
+<tr>
+<td>
+<p /></td>
+<td>
+<p>{{subCostComponent.name}}</p></td>
+<td>
+<p>{{subCostComponent.monthlyQuantity}}</p></td>
+<td>
+<p>{{subCostComponent.unit}}</p></td>
+<td>
+<p>${{subCostComponent.monthlyCost}}</p></td></tr>
+{%- endfor %}
+{%- endfor %}
+{% endif %}
+{%- endfor %}
+{%- endfor %}
+<tr>
+<td data-highlight-colour="#ffc400">
+<p><strong>Project total</strong></p></td>
+<td data-highlight-colour="#ffc400">
+<p /></td>
+<td data-highlight-colour="#ffc400">
+<p /></td>
+<td data-highlight-colour="#ffc400">
+<p /></td>
+<td data-highlight-colour="#ffc400">
+<p><strong>${{project.breakdown.totalMonthlyCost}}</strong></p></td></tr></tbody></table>
+<p />
+{%- endfor %}
+
+<table data-layout="default" ac:local-id="bb79ea75-f0ef-49f3-bfdc-4acd4390a3ce"><colgroup><col style="width: 124.0px;" /><col style="width: 123.0px;" /><col style="width: 124.0px;" /><col style="width: 124.0px;" /><col style="width: 124.0px;" /></colgroup>
+<tbody>
+<tr>
+<td data-highlight-colour="#ff8f73">
+<h1><strong>Overall total</strong></h1></td>
+<td data-highlight-colour="#ff8f73">
+<p /></td>
+<td data-highlight-colour="#ff8f73">
+<p /></td>
+<td data-highlight-colour="#ff8f73">
+<p /></td>
+<td data-highlight-colour="#ff8f73">
+<p><strong>${{totalMonthlyCost}}</strong></p></td></tr></tbody></table>
+<p />

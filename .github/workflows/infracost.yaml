@@ -1,0 +1,63 @@
+name: Infracost Shared Workflow
+
+on:
+  workflow_call:
+    secrets:
+      INFRACOST_API_KEY:
+        required: true 
+      CONFLUENCE_USERNAME:
+        required: true     
+      CONFLUENCE_API_TOKEN:
+        required: true
+    inputs:
+      CONFLUENCE_PAGE_ID:
+        required: true
+        type: string  
+      CONFLUENCE_PAGE_TITLE:
+        required: true
+        type: string 
+      INFRACOST_ARTIFACT:
+        required: true
+        type: string 
+
+jobs:
+  infracost:
+    runs-on: oozou-eks-runner
+    steps:
+    
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.INFRACOST_ARTIFACT }} 
+    
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        # See https://github.com/infracost/actions/tree/master/setup for other inputs
+        # If you can't use this action, see Docker images in https://infracost.io/cicd
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost cost estimate
+        run: |
+            infracost breakdown --config-file infracost.yml --format json --out-file output.json
+ 
+      - name: Checkout shared repo
+        continue-on-error: true
+        run: |
+          git clone https://github.com/poc-lycbrina/.github script
+
+        
+      - name: post result to conflunece
+        working-directory: script/.github/workflows/scripts/infracost
+        run: |
+            cat << EOF > .env
+            LOG_LEVEL=INFO
+            DATA_FILE= ${GITHUB_WORKSPACE}/output.json
+            URL=https://oozouhq.atlassian.net
+            USERNAME=${{ secrets.CONFLUENCE_USERNAME }} 
+            API_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }} 
+            PAGE_ID=${{ inputs.CONFLUENCE_PAGE_ID }} 
+            PAGE_TITLE=${{ inputs.CONFLUENCE_PAGE_TITLE }} 
+            EOF
+            cat .env
+            pip3 install -r requirements.txt
+            python3 infracost.py
