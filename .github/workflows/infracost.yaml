@@ -44,6 +44,9 @@ jobs:
         continue-on-error: true
         run: |
           git clone https://github.com/oozou/.github script
+          pwd
+          ls -al script
+          ls -al script/.github
 
         
       - name: post result to conflunece
