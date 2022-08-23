@@ -38,6 +38,7 @@ jobs:
 
       - name: Generate Infracost cost estimate
         run: |
+            ls */*
             infracost breakdown --config-file infracost*.yml --format json --out-file output.json
  
       - name: Checkout shared repo
