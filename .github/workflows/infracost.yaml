@@ -43,12 +43,8 @@ jobs:
       - name: Checkout shared repo
         continue-on-error: true
         run: |
-          git clone https://github.com/oozou/.github script
-          pwd
-          ls -al script
-          ls -al script/.github
-
-        
+          git clone --single-branch --branch feat/infracost https://github.com/oozou/.github script
+      
       - name: post result to conflunece
         working-directory: script/.github/workflows/scripts/infracost
         run: |
