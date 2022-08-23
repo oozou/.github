@@ -38,12 +38,12 @@ jobs:
 
       - name: Generate Infracost cost estimate
         run: |
-            infracost breakdown --config-file infracost.yml --format json --out-file output.json
+            infracost breakdown --config-file infracost*.yml --format json --out-file output.json
  
       - name: Checkout shared repo
         continue-on-error: true
         run: |
-          git clone https://github.com/poc-lycbrina/.github script
+          git clone https://github.com/oozou/.github script
 
         
       - name: post result to conflunece
