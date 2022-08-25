@@ -70,7 +70,7 @@ def count_issues(url, api_token, project_key):
     session = requests.Session()
     session.auth = api_token, ''
     call = getattr(session, 'get')
-    res = call(url+f'api/issues/search?componentKeys={project_key}&statuses=OPEN&severities=CRITICAL,BLOCKER,MAJOR')
+    res = call(url+f'/api/issues/search?componentKeys={project_key}&statuses=OPEN&severities=CRITICAL,BLOCKER,MAJOR')
     output = json.loads(res.content)
     return output['total']
 
