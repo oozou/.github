@@ -28,6 +28,10 @@ jobs:
       with:
         name: ${{ inputs.CODE_ARTIFACT }} 
 
+    - name: unzip artifact
+      run: |
+            tar xzf *.tar.gz
+      
     - name: get ruby 
       if: contains(inputs.SCAN_TYPE, 'Ruby')
       uses: ruby/setup-ruby@v1
