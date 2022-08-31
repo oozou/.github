@@ -28,6 +28,10 @@ jobs:
       with:
         name: ${{ inputs.CODE_ARTIFACT }} 
 
+    - name: unzip artifact
+      run: |
+            tar xzf *.tar.gz
+      
     - name: get ruby 
       if: contains(inputs.SCAN_TYPE, 'Ruby')
       uses: ruby/setup-ruby@v1
@@ -105,8 +109,8 @@ jobs:
             channel = ${{inputs.SLACK_CHANNEL}}
           EOF
           python3 sonar-scripts/.github/workflows/scripts/sonarqube/sonarqube_notification.py -c sonarqube-env.ini
-      
     - name: remove temp artefact
       uses: geekyeggo/delete-artifact@v1
       with:
         name: ${{ inputs.CODE_ARTIFACT }} 
+
