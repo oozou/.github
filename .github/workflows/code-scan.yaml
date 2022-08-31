@@ -8,7 +8,10 @@ on:
         type: string         
       SCAN_INCLUDE:
         required: true
-        type: string       
+        type: string     
+      CODE_ARTIFACT:
+        required: true
+        type: string    
       SCAN_EXCLUDE:
         required: false
         type: string            
@@ -20,8 +23,11 @@ jobs:
     runs-on: oozou-eks-runner
       
     steps:
-    - uses: actions/checkout@v2
-    
+    #- uses: actions/checkout@v2
+    - uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.CODE_ARTIFACT }} 
+
     - name: get ruby 
       if: contains(inputs.SCAN_TYPE, 'Ruby')
       uses: ruby/setup-ruby@v1
@@ -88,7 +94,7 @@ jobs:
     - name: Slack notification
       if: "${{ inputs.SLACK_CHANNEL != '' }}"
       run: |
-          git clone --single-branch --branch feat/sonar-notification https://github.com/oozou/.github script
+          git clone --single-branch --branch feat/sonar-notification https://github.com/oozou/.github sonar-scripts
           cat << EOF > sonarqube-env.ini
           [sonarqube]
             url = ${{ secrets.SONAR_HOST_URL }}
@@ -101,4 +107,4 @@ jobs:
             webhook = ${{ secrets.OOZOU_SLACK_NOTIFICATION_WEBHOOK_URL }}
             channel = ${{inputs.SLACK_CHANNEL}}
           EOF
-          python3 script/.github/workflows/scripts/sonarqube/sonarqube_notification.py -c sonarqube-env.ini
+          python3 sonar-scripts/.github/workflows/scripts/sonarqube/sonarqube_notification.py -c sonarqube-env.ini
