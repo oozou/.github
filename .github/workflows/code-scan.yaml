@@ -9,9 +9,6 @@ on:
       SCAN_INCLUDE:
         required: true
         type: string     
-      CODE_ARTIFACT:
-        required: true
-        type: string    
       SCAN_EXCLUDE:
         required: false
         type: string            
@@ -23,15 +20,9 @@ jobs:
     runs-on: oozou-eks-runner
       
     steps:
-    #- uses: actions/checkout@v2
-    - uses: actions/download-artifact@v3
-      with:
-        name: ${{ inputs.CODE_ARTIFACT }} 
+    - uses: actions/checkout@v2
 
-    - name: unzip artifact
-      run: |
-            tar xzf *.tar.gz
-      
+
     - name: get ruby 
       if: contains(inputs.SCAN_TYPE, 'Ruby')
       uses: ruby/setup-ruby@v1
@@ -87,7 +78,10 @@ jobs:
         args: >
           -Dsonar.projectKey=${{ github.event.repository.name }}-${{inputs.SCAN_TYPE}}
           -Dsonar.externalIssuesReportPaths=external_report
+          -Dsonar.sources=${{inputs.SCAN_INCLUDE}}
+          -Dsonar.exclusions=${{inputs.SCAN_EXCLUDE}},**/*java
           -Dsonar.ruby.rubocop.reportPaths=$RUBOCOP_REPORT
+          -Dsonar.scm.exclusions.disabled=true
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -109,8 +103,4 @@ jobs:
             channel = ${{inputs.SLACK_CHANNEL}}
           EOF
           python3 sonar-scripts/.github/workflows/scripts/sonarqube/sonarqube_notification.py -c sonarqube-env.ini
-    - name: remove temp artefact
-      uses: geekyeggo/delete-artifact@v1
-      with:
-        name: ${{ inputs.CODE_ARTIFACT }} 
-
+      
