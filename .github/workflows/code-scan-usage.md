@@ -28,7 +28,7 @@ on:
 jobs:
 		
   scan:
-    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    uses: oozou/.github/.github/workflows/code-scan.yaml@main
     secrets: inherit
     with:
         SCAN_TYPE: IAC
@@ -48,7 +48,7 @@ on:
 jobs:
 		
   scan:
-    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    uses: oozou/.github/.github/workflows/code-scan.yaml@main
     secrets: inherit
     with:
         SCAN_TYPE: Ruby
@@ -69,7 +69,7 @@ on:
 jobs:
 		
   scan:
-    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    uses: oozou/.github/.github/workflows/code-scan.yaml@main
     secrets: inherit
     with:
         SCAN_TYPE: Javascript
@@ -89,7 +89,7 @@ on:
 jobs:
 		
   scan:
-    uses: oozou/.github/.github/workflows/code-scan.yml@main
+    uses: oozou/.github/.github/workflows/code-scan.yaml@main
     secrets: inherit
     with:
         SCAN_TYPE: Mobile
