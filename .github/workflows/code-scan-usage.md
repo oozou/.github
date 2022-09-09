@@ -9,7 +9,8 @@ This shared workflow is created to be used by other repositories workflows in th
 | :------------: | :------------: | :------------: | :------------ |
 | SCAN_TYPE  | string | Yes |Support types:<br/>- IAC (Include Terraform, Docker, Kubernetes) <br/>- Ruby   <br/>- Javascript (.njsscan file is required under the root path, sample: [.nsscan](./.njsscan)) <br/>- Mobile  (.mobsf file is required under the root path, sample: [.mobsf](./.mobsf)) |
 |  SCAN_INCLUDE | string | Yes |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: terraform/,Dockerfile| 
-|  SCAN_EXCLUDE |  string | No |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: app/assets/,test/ | |
+|  SCAN_EXCLUDE |  string | No |Comma-separated paths to directories containing main source files. For directories add "/" behind. Example: app/assets/,test/ |
+|  SLACK_CHANNEL |  string | No | if slack channel name provided, notification will be sent to the slack channel if any major,critical or Block issue found,  | |
 
 
 
