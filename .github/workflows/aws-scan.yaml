@@ -48,7 +48,7 @@ jobs:
           cat << EOF > config.ini
           [report]
           report_path = report.json
-          group_key = Service
+          group_key = ServiceName
           EOF
           curl https://raw.githubusercontent.com/oozou/.github/main/.github/workflows/scripts/aws-prowler/prowler_report_split.py -o prowler_report_split.py
           python prowler_report_split.py -c config.ini
