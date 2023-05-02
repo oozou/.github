@@ -28,17 +28,10 @@ def main(argv):
     report = config['report']['report_path']
     group_key = config['report']['group_key']
 
-    report_file = open(report, 'r')
-    Lines = report_file.readlines()
-
-    count = 0
-    # Strips the newline character
-    json_data = []
-    for line in Lines:
-        count += 1
-        line = json.loads(line)
-        json_data.append(line)
-
+    with open(report) as user_file:
+        file_contents = user_file.read()
+        
+    json_data = json.loads(file_contents)
     json_data.sort(key=lambda json_data: json_data[group_key])
     groups = groupby(json_data, lambda json_data: json_data[group_key])
 
