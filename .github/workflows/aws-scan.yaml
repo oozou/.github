@@ -40,7 +40,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod -R 777 .
-          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN 562563527952.dkr.ecr.us-east-2.amazonaws.com/aws-prowler:latest -r ${{ inputs.AWS_REGION }} -f ${{ inputs.AWS_REGION }} -M json -g oozou-${{ inputs.AWS_ENVIRONMENT }} || true
+          docker run  --rm -v ${PWD}:/prowler/output --name prowler --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN 562563527952.dkr.ecr.us-east-2.amazonaws.com/aws-prowler:latest aws -r ${{ inputs.AWS_REGION }} -f ${{ inputs.AWS_REGION }} -M json -g oozou-${{ inputs.AWS_ENVIRONMENT }} || true
           mv *.json report.json
           
       - id: set-matrix  
