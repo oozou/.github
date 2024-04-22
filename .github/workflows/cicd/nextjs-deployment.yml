@@ -1,0 +1,172 @@
+name: nextjs deployment
+
+on:
+  workflow_call:
+    secrets:
+      CLIENT_BASIC_AUTH_PASSWORD:
+        description: "basic auth password"
+      SENTRY_AUTH_TOKEN:
+        description: "Sentry auth token"
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      REGION:
+        required: true
+        type: string
+      ECR_REPOSITORY:
+        required: true
+        type: string
+      IAM_OIDC_ROLE:
+        required: true
+        type: string
+      NODE_ENV:
+        required: true
+        type: string
+      NEXT_PUBLIC_BACKEND_API_URL:
+        required: true
+        type: string
+      NEXT_PUBLIC_CLIENT_URL:
+        required: true
+        type: string
+      BACKEND_API_URL:
+        required: true
+        type: string
+      NEXT_PUBLIC_SUPPORT_EMAIL:
+        required: true
+        type: string
+      CLIENT_BASIC_AUTH_ENABLED:
+        required: true
+        type: string
+      CLIENT_BASIC_AUTH_USERNAME:
+        required: true
+        type: string
+      NEXT_PUBLIC_STRIPE_PUBLISH_KEY:
+        required: true
+        type: string
+      NEXT_PUBLIC_V1_CLIENT_BASE_URL:
+        required: true
+        type: string
+      NEXT_PUBLIC_SLACK_CLIENT_ID:
+        required: true
+        type: string
+      NEXT_PUBLIC_SALES_EMAIL:
+        required: true
+        type: string
+      NEXT_PUBLIC_SSO_DOCUMENTATION_URL:
+        required: true
+        type: string
+      NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS:
+        required: true
+        type: string
+      SENTRY_PUBLIC_DSN:
+        required: true
+        type: string
+      APP_RELEASE_ID:
+        required: true
+        type: string
+      NEXT_PUBLIC_BACKEND_WS_URL:
+        required: true
+        type: string
+
+env:
+  PREFIX: ${{ inputs.PREFIX }}
+  ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+  NAME: ${{ inputs.NAME }}
+  APP_NAME: ${{ inputs.APP_NAME }}
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: oozou-eks-runner
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+      url: ${{ steps.deployment-result.outputs.status-url }}
+    concurrency: deploy-${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Concatenate ENV
+        run: |
+          echo "FULL_PREFIX=${{ env.PREFIX }}-${{ env.ENVIRONMENT }}-${{ env.NAME }}" >> $GITHUB_ENV
+          echo "FULL_NAME=${{ env.PREFIX }}-${{ env.ENVIRONMENT }}-${{ env.NAME }}-${{ env.APP_NAME }}" >> $GITHUB_ENV
+          echo "FULL_CLUSTER_NAME=${{ env.PREFIX }}-${{ env.ENVIRONMENT }}-${{ env.NAME }}-cluster" >> $GITHUB_ENV
+          echo "FULL_SERVICE_NAME=${{ env.PREFIX }}-${{ env.ENVIRONMENT }}-${{ env.NAME }}-${{ env.APP_NAME }}-service" >> $GITHUB_ENV
+
+      - name: Get the correct latest commit sha
+        id: get-commit-sha
+        env:
+          MERGE_COMMIT_SHA: ${{ github.sha }}
+          PR_LATEST_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export sha=${PR_LATEST_COMMIT_SHA:-$MERGE_COMMIT_SHA}
+          echo "sha=$sha" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${{ env.sha }} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ inputs.IAM_OIDC_ROLE }}
+          aws-region: ${{ inputs.REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up Docker Context for Buildx
+        id: buildx-context
+        run: |
+          docker context create builders
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+          endpoint: builders
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.sha }}
+          ECR_REPOSITORY: ${{inputs.ECR_REPOSITORY}}
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:${{env.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
+          cache-to: type=inline
+          build-args: |
+            "NODE_ENV=${{ inputs.NODE_ENV }}"
+            "NEXT_PUBLIC_CLIENT_URL=${{ inputs.NEXT_PUBLIC_CLIENT_URL }}"
+            "NEXT_PUBLIC_BACKEND_API_URL=${{ inputs.NEXT_PUBLIC_BACKEND_API_URL }}"
+            "NEXT_PUBLIC_STRIPE_PUBLISH_KEY=${{ inputs.NEXT_PUBLIC_STRIPE_PUBLISH_KEY }}"
+            "NEXT_PUBLIC_V1_CLIENT_BASE_URL=${{ inputs.NEXT_PUBLIC_V1_CLIENT_BASE_URL }}"
+            "NEXT_PUBLIC_SLACK_CLIENT_ID=${{ inputs.NEXT_PUBLIC_SLACK_CLIENT_ID }}"
+            "NEXT_PUBLIC_SALES_EMAIL=${{ inputs.NEXT_PUBLIC_SALES_EMAIL }}"
+            "NEXT_PUBLIC_SSO_DOCUMENTATION_URL=${{ inputs.NEXT_PUBLIC_SSO_DOCUMENTATION_URL }}"
+            "NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS=${{ inputs.NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS }}"
+            "BACKEND_API_URL=${{ inputs.BACKEND_API_URL }}"
+            "NEXT_PUBLIC_SUPPORT_EMAIL=${{ inputs.NEXT_PUBLIC_SUPPORT_EMAIL }}"
+            "CLIENT_BASIC_AUTH_ENABLED=${{ inputs.CLIENT_BASIC_AUTH_ENABLED }}"
+            "CLIENT_BASIC_AUTH_USERNAME=${{ inputs.CLIENT_BASIC_AUTH_USERNAME }}"
+            "CLIENT_BASIC_AUTH_PASSWORD=${{ secrets.CLIENT_BASIC_AUTH_PASSWORD }}"
+            "APP_RELEASE_ID=${{ inputs.APP_RELEASE_ID }}"
+            "APP_ENV=${{ inputs.ENVIRONMENT }}"
+            "SENTRY_PUBLIC_DSN=${{ inputs.SENTRY_PUBLIC_DSN }}"
+            "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"
+            "NEXT_PUBLIC_BACKEND_WS_URL=${{ inputs.NEXT_PUBLIC_BACKEND_WS_URL }}"
+            "SENTRY_RELEASE=${{ env.sha }}"
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --region ${{ inputs.REGION }} --task-definition ${{ env.FULL_SERVICE_NAME }} --query taskDefinition >
