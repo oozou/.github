@@ -21,12 +21,6 @@ on:
       NAME:
         required: true
         type: string
-      FULL_PREFIX:
-        required: true
-        type: string
-      FULL_NAME:
-        required: true
-        type: string
       APP_NAME:
         required: true
         type: string
@@ -135,8 +129,6 @@ jobs:
           sh .github/workflows/deploy-ecs.sh ${{ inputs.ENVIRONMENT }} ${{ inputs.REGION }} $CLUSTER $SERVICE $ECR_REGISTRY/${{inputs.ECR_REPOSITORY}} $IMAGE_TAG
       - name: Register Task and Run DB Migration
         env:
-          FULL_PREFIX: ${{ inputs.FULL_PREFIX }}
-          FULL_NAME: ${{ inputs.FULL_NAME }}
           FULL_CLUSTER_NAME: ${{ inputs.FULL_CLUSTER_NAME }}
           FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
         run: |
