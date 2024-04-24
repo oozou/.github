@@ -51,6 +51,16 @@ env:
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
   NAME: ${{ inputs.NAME }}
   APP_NAME: ${{ inputs.APP_NAME }}
+  REGION: ${{ inputs.REGION }}
+  ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY_STAGING }}
+  IAM_OIDC_ROLE: ${{ inputs.IAM_OIDC_ROLE_STAGING }}
+  SENTRY_ORG: ${{ inputs.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ inputs.SENTRY_PROJECT }}
+  SHA: ${{ inputs.SHA }}
+  ECR_REGISTRY: ${{ inputs.ECR_REGISTRY }}
+  IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+  FULL_CLUSTER_NAME: ${{ inputs.FULL_CLUSTER_NAME }}
+  FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
 
 jobs:
   deploy:
