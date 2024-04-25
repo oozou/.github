@@ -24,15 +24,6 @@ on:
       APP_NAME:
         required: true
         type: string
-      SHA:
-        required: true
-        type: string
-      ECR_REGISTRY:
-        required: true
-        type: string
-      IMAGE_TAG:
-        required: true
-        type: string
       FULL_CLUSTER_NAME:
         required: true
         type: string
@@ -56,9 +47,6 @@ env:
   IAM_OIDC_ROLE: ${{ inputs.IAM_OIDC_ROLE_STAGING }}
   SENTRY_ORG: ${{ inputs.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ inputs.SENTRY_PROJECT }}
-  SHA: ${{ inputs.SHA }}
-  ECR_REGISTRY: ${{ inputs.ECR_REGISTRY }}
-  IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
   FULL_CLUSTER_NAME: ${{ inputs.FULL_CLUSTER_NAME }}
   FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
 
@@ -92,7 +80,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3.0.2
       - name: Add SHORT_SHA env property with commit short sha
-        run: echo "SHORT_SHA=`echo ${{ inputs.sha }} | cut -c1-8`" >> $GITHUB_ENV
+        run: echo "SHORT_SHA=`echo ${{ env.sha }} | cut -c1-8`" >> $GITHUB_ENV
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -119,13 +107,13 @@ jobs:
         uses: docker/build-push-action@v3
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ inputs.sha }}
+          IMAGE_TAG: ${{ env.sha }}
           ECR_REPOSITORY: ${{inputs.ECR_REPOSITORY}}
         with:
           context: .
           push: true
-          tags: ${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:${{inputs.IMAGE_TAG}},${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
-          cache-from: type=registry,ref=${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          tags: ${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:${{env.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
           cache-to: type=inline
       - name: Retrive task def and Fill in the new image ID in the Amazon ECS task definition
         id: task-def-migration
@@ -133,7 +121,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           CLUSTER: ${{ inputs.FULL_CLUSTER_NAME }}
           SERVICE: ${{ inputs.FULL_SERVICE_NAME }}
-          IMAGE_TAG: ${{ inputs.sha }}
+          IMAGE_TAG: ${{ env.sha }}
         run: |
           ls -lart
           sh .github/workflows/deploy-ecs.sh ${{ inputs.ENVIRONMENT }} ${{ inputs.REGION }} $CLUSTER $SERVICE $ECR_REGISTRY/${{inputs.ECR_REPOSITORY}} $IMAGE_TAG
@@ -167,7 +155,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ inputs.FULL_SERVICE_NAME }}
-          image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY}}:${{ inputs.sha }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY}}:${{ env.sha }}
       - name: Deploy to Amazon ECS service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -183,6 +171,6 @@ jobs:
           SENTRY_PROJECT: ${{ inputs.SENTRY_PROJECT }}
         with:
           environment: ${{ inputs.ENVIRONMENT }}
-          version: ${{ inputs.sha }}
+          version: ${{ env.sha }}
           ignore_missing: true
           ignore_empty: true
