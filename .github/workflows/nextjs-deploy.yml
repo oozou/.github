@@ -62,13 +62,19 @@ on:
       SENTRY_PUBLIC_DSN:
         required: true
         type: string
-      APP_RELEASE_ID:
-        required: true
-        type: string
       NEXT_PUBLIC_BACKEND_WS_URL:
         required: true
         type: string
       FULL_SERVICE_NAME:
+        required: true
+        type: string
+      PREFIX:
+        required: true
+        type: string
+      NAME:
+        required: true
+        type: string
+      APP_NAME:
         required: true
         type: string
 
