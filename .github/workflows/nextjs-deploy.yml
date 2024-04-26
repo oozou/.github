@@ -83,25 +83,6 @@ env:
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
   NAME: ${{ inputs.NAME }}
   APP_NAME: ${{ inputs.APP_NAME }}
-  REGION: ${{ inputs.REGION }}
-  ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
-  IAM_OIDC_ROLE: ${{ inputs.IAM_OIDC_ROLE }}
-  NODE_ENV: ${{ inputs.NODE_ENV }}
-  NEXT_PUBLIC_BACKEND_API_URL: ${{ inputs.NEXT_PUBLIC_BACKEND_API_URL }}
-  NEXT_PUBLIC_CLIENT_URL: ${{ inputs.NEXT_PUBLIC_CLIENT_URL }}
-  BACKEND_API_URL: ${{ inputs.BACKEND_API_URL }}
-  NEXT_PUBLIC_SUPPORT_EMAIL: ${{ inputs.NEXT_PUBLIC_SUPPORT_EMAIL }}
-  CLIENT_BASIC_AUTH_ENABLED: ${{ inputs.CLIENT_BASIC_AUTH_ENABLED }}
-  CLIENT_BASIC_AUTH_USERNAME: ${{ inputs.CLIENT_BASIC_AUTH_USERNAME }}
-  NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ inputs.NEXT_PUBLIC_STRIPE_PUBLISH_KEY }}
-  NEXT_PUBLIC_V1_CLIENT_BASE_URL: ${{ inputs.NEXT_PUBLIC_V1_CLIENT_BASE_URL }}
-  NEXT_PUBLIC_SLACK_CLIENT_ID: ${{ inputs.NEXT_PUBLIC_SLACK_CLIENT_ID }}
-  NEXT_PUBLIC_SALES_EMAIL: ${{ inputs.NEXT_PUBLIC_SALES_EMAIL }}
-  NEXT_PUBLIC_SSO_DOCUMENTATION_URL: ${{ inputs.NEXT_PUBLIC_SSO_DOCUMENTATION_URL }}
-  NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS: ${{ inputs.NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS }}
-  SENTRY_PUBLIC_DSN: ${{ inputs.SENTRY_PUBLIC_DSN }}
-  NEXT_PUBLIC_BACKEND_WS_URL: ${{ inputs.NEXT_PUBLIC_BACKEND_WS_URL }}
-  FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
 
 jobs:
   deploy:
@@ -122,7 +103,6 @@ jobs:
           echo "FULL_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-${{ inputs.APP_NAME }}" >> $GITHUB_ENV
           echo "FULL_CLUSTER_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-cluster" >> $GITHUB_ENV
           echo "FULL_SERVICE_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-${{ inputs.APP_NAME }}-service" >> $GITHUB_ENV
-
       - name: Get the correct latest commit sha
         id: get-commit-sha
         env:
@@ -131,35 +111,28 @@ jobs:
         run: |
           export sha=${PR_LATEST_COMMIT_SHA:-$MERGE_COMMIT_SHA}
           echo "sha=$sha" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Add SHORT_SHA env property with commit short sha
         run: echo "SHORT_SHA=`echo ${{ env.sha }} | cut -c1-8`" >> $GITHUB_ENV
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ inputs.IAM_OIDC_ROLE }}
           aws-region: ${{ inputs.REGION }}
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-
       - name: Set up Docker Context for Buildx
         id: buildx-context
         run: |
           docker context create builders
-
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
         with:
           version: latest
           endpoint: builders
-
       - name: Build and push
         uses: docker/build-push-action@v3
         env:
@@ -194,7 +167,6 @@ jobs:
             "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"
             "NEXT_PUBLIC_BACKEND_WS_URL=${{ inputs.NEXT_PUBLIC_BACKEND_WS_URL }}"
             "SENTRY_RELEASE=${{ env.sha }}"
-
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --region ${{ inputs.REGION }} --task-definition ${{ inputs.FULL_SERVICE_NAME }} --query taskDefinition >
