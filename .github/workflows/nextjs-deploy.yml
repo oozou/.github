@@ -170,8 +170,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:${{inputs.IMAGE_TAG}},${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
-          cache-from: type=registry,ref=${{inputs.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          tags: ${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:${{env.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
           cache-to: type=inline
           build-args: |
             "NODE_ENV=${{ inputs.NODE_ENV }}"
