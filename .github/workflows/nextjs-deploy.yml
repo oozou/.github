@@ -62,9 +62,6 @@ on:
       SENTRY_PUBLIC_DSN:
         required: true
         type: string
-      APP_RELEASE_ID:
-        required: true
-        type: string
       NEXT_PUBLIC_BACKEND_WS_URL:
         required: true
         type: string
@@ -166,7 +163,7 @@ jobs:
             "CLIENT_BASIC_AUTH_ENABLED=${{ inputs.CLIENT_BASIC_AUTH_ENABLED }}"
             "CLIENT_BASIC_AUTH_USERNAME=${{ inputs.CLIENT_BASIC_AUTH_USERNAME }}"
             "CLIENT_BASIC_AUTH_PASSWORD=${{ secrets.CLIENT_BASIC_AUTH_PASSWORD }}"
-            "APP_RELEASE_ID=${{ inputs.APP_RELEASE_ID }}"
+            "APP_RELEASE_ID=${{ env.sha }}"
             "APP_ENV=${{ inputs.ENVIRONMENT }}"
             "SENTRY_PUBLIC_DSN=${{ inputs.SENTRY_PUBLIC_DSN }}"
             "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"
