@@ -14,10 +14,10 @@ on:
       REGION:
         required: true
         type: string
-      ECR_REPOSITORY_STAGING:
+      ECR_REPOSITORY:
         required: true
         type: string
-      IAM_OIDC_ROLE_STAGING:
+      IAM_OIDC_ROLE:
         required: true
         type: string
       NODE_ENV:
@@ -119,7 +119,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: ${{ inputs.IAM_OIDC_ROLE_STAGING }}
+          role-to-assume: ${{ inputs.IAM_OIDC_ROLE }}
           aws-region: ${{ inputs.REGION }}
 
       - name: Login to Amazon ECR
@@ -143,7 +143,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ env.sha }}
-          ECR_REPOSITORY: ${{inputs.ECR_REPOSITORY_STAGING}}
+          ECR_REPOSITORY: ${{inputs.ECR_REPOSITORY}}
         with:
           context: .
           file: Dockerfile
@@ -184,7 +184,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ inputs.FULL_SERVICE_NAME }}
-          image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY_STAGING}}:${{ env.sha }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY}}:${{ env.sha }}
           environment-variables: |
             SENTRY_RELEASE=${{ env.sha }}
 
