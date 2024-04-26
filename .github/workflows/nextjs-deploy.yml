@@ -68,6 +68,15 @@ on:
       GTM_ID:
         required: true
         type: string
+      PREFIX:
+        required: true
+        type: string
+      NAME:
+        required: true
+        type: string
+      APP_NAME:
+        required: true
+        type: string
 
 env:
   PREFIX: ${{inputs.PREFIX}}
