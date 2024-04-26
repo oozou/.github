@@ -73,10 +73,10 @@ on:
         type: string
 
 env:
-  PREFIX: oozou
+  PREFIX: ${{inputs.PREFIX}}
   ENVIRONMENT: ${{inputs.ENVIRONMENT}}
-  NAME: slimwiki
-  APP_NAME: next
+  NAME: ${{inputs.NAME}}
+  APP_NAME: ${{inputs.APP_NAME}}
 
 jobs:
   deploy_staging:
@@ -176,14 +176,14 @@ jobs:
 
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --region ${{ inputs.REGION }} --task-definition ${{ env.FULL_SERVICE_NAME }} --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --region ${{ inputs.REGION }} --task-definition ${{ inputs.FULL_SERVICE_NAME }} --query taskDefinition > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: ${{ env.FULL_SERVICE_NAME }}
+          container-name: ${{ inputs.FULL_SERVICE_NAME }}
           image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY_STAGING}}:${{ env.sha }}
           environment-variables: |
             SENTRY_RELEASE=${{ env.sha }}
@@ -192,6 +192,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: ${{ env.FULL_CLUSTER_NAME }}
-          service: ${{ env.FULL_SERVICE_NAME }}
+          cluster: ${{ inputs.FULL_CLUSTER_NAME }}
+          service: ${{ inputs.FULL_SERVICE_NAME }}
           wait-for-service-stability: true
