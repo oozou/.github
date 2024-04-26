@@ -77,6 +77,12 @@ on:
       APP_NAME:
         required: true
         type: string
+      FULL_CLUSTER_NAME:
+        required: true
+        type: string
+      FULL_SERVICE_NAME:
+        required: true
+        type: string
 
 env:
   PREFIX: ${{inputs.PREFIX}}
