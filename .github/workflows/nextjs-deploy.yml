@@ -83,25 +83,6 @@ env:
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
   NAME: ${{ inputs.NAME }}
   APP_NAME: ${{ inputs.APP_NAME }}
-  REGION: ${{ inputs.REGION }}
-  ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
-  IAM_OIDC_ROLE: ${{ inputs.IAM_OIDC_ROLE }}
-  NODE_ENV: ${{ inputs.NODE_ENV }}
-  NEXT_PUBLIC_BACKEND_API_URL: ${{ inputs.NEXT_PUBLIC_BACKEND_API_URL }}
-  NEXT_PUBLIC_CLIENT_URL: ${{ inputs.NEXT_PUBLIC_CLIENT_URL }}
-  BACKEND_API_URL: ${{ inputs.BACKEND_API_URL }}
-  NEXT_PUBLIC_SUPPORT_EMAIL: ${{ inputs.NEXT_PUBLIC_SUPPORT_EMAIL }}
-  CLIENT_BASIC_AUTH_ENABLED: ${{ inputs.CLIENT_BASIC_AUTH_ENABLED }}
-  CLIENT_BASIC_AUTH_USERNAME: ${{ inputs.CLIENT_BASIC_AUTH_USERNAME }}
-  NEXT_PUBLIC_STRIPE_PUBLISH_KEY: ${{ inputs.NEXT_PUBLIC_STRIPE_PUBLISH_KEY }}
-  NEXT_PUBLIC_V1_CLIENT_BASE_URL: ${{ inputs.NEXT_PUBLIC_V1_CLIENT_BASE_URL }}
-  NEXT_PUBLIC_SLACK_CLIENT_ID: ${{ inputs.NEXT_PUBLIC_SLACK_CLIENT_ID }}
-  NEXT_PUBLIC_SALES_EMAIL: ${{ inputs.NEXT_PUBLIC_SALES_EMAIL }}
-  NEXT_PUBLIC_SSO_DOCUMENTATION_URL: ${{ inputs.NEXT_PUBLIC_SSO_DOCUMENTATION_URL }}
-  NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS: ${{ inputs.NEXT_PUBLIC_SUPER_ADMIN_EMAIL_DOMAINS }}
-  SENTRY_PUBLIC_DSN: ${{ inputs.SENTRY_PUBLIC_DSN }}
-  NEXT_PUBLIC_BACKEND_WS_URL: ${{ inputs.NEXT_PUBLIC_BACKEND_WS_URL }}
-  FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
 
 jobs:
   deploy:
@@ -170,8 +151,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:${{env.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
-          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.ECR_REPOSITORY}}:latest
+          tags: ${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:${{inputs.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
           cache-to: type=inline
           build-args: |
             "NODE_ENV=${{ inputs.NODE_ENV }}"
