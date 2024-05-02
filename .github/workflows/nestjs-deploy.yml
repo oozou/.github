@@ -1,0 +1,169 @@
+name: nestjs deployment
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+      REGION:
+        required: true
+        type: string
+      ECR_REPOSITORY:
+        required: true
+        type: string
+      IAM_OIDC_ROLE:
+        required: true
+        type: string
+      PREFIX:
+        required: true
+        type: string
+      NAME:
+        required: true
+        type: string
+      APP_NAME:
+        required: true
+        type: string
+      FULL_CLUSTER_NAME:
+        required: true
+        type: string
+      FULL_SERVICE_NAME:
+        required: true
+        type: string
+      SENTRY_ORG:
+        type: string
+      SENTRY_PROJECT:
+        type: string
+
+env:
+  PREFIX: ${{ inputs.PREFIX }}
+  ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+  NAME: ${{ inputs.NAME }}
+  APP_NAME: ${{ inputs.APP_NAME }}
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: oozou-eks-runner
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+      url: ${{ steps.deployment-result.outputs.status-url }}
+    concurrency: deploy_${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Concatenate ENV
+        run: |
+          echo "FULL_PREFIX=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}" >> $GITHUB_ENV
+          echo "FULL_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-${{ inputs.APP_NAME }}" >> $GITHUB_ENV
+          echo "FULL_CLUSTER_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-cluster" >> $GITHUB_ENV
+          echo "FULL_SERVICE_NAME=${{ inputs.PREFIX }}-${{ inputs.ENVIRONMENT }}-${{ inputs.NAME }}-${{ inputs.APP_NAME }}-service" >> $GITHUB_ENV
+      - name: Get the correct latest commit sha
+        id: get-commit-sha
+        env:
+          MERGE_COMMIT_SHA: ${{ github.sha }}
+          PR_LATEST_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          export sha=${PR_LATEST_COMMIT_SHA:-$MERGE_COMMIT_SHA}
+          echo "sha=$sha" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v3.0.2
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${{ env.sha }} | cut -c1-8`" >> $GITHUB_ENV
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ inputs.IAM_OIDC_ROLE }}
+          aws-region: ${{ inputs.REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: get rds cert
+        run: |
+          mkdir certs
+          wget https://s3.amazonaws.com/rds-downloads/rds-ca-2019-root.pem -P certs
+      - name: Set up Docker Context for Buildx
+        id: buildx-context
+        run: |
+          docker context create builders
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+          endpoint: builders
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.sha }}
+          ECR_REPOSITORY: ${{inputs.ECR_REPOSITORY}}
+        with:
+          context: .
+          push: true
+          tags: ${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:${{env.IMAGE_TAG}},${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{inputs.ECR_REPOSITORY}}:latest
+          cache-to: type=inline
+      - name: Retrive task def and Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-migration
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          CLUSTER: ${{ inputs.FULL_CLUSTER_NAME }}
+          SERVICE: ${{ inputs.FULL_SERVICE_NAME }}
+          IMAGE_TAG: ${{ env.sha }}
+        run: |
+          ls -lart
+          sh .github/workflows/deploy-ecs.sh ${{ inputs.ENVIRONMENT }} ${{ inputs.REGION }} $CLUSTER $SERVICE $ECR_REGISTRY/${{inputs.ECR_REPOSITORY}} $IMAGE_TAG
+      - name: Register Task and Run DB Migration
+        if: ${{ inputs.FULL_CLUSTER_NAME && inputs.FULL_SERVICE_NAME }}
+        env:
+          FULL_CLUSTER_NAME: ${{ inputs.FULL_CLUSTER_NAME }}
+          FULL_SERVICE_NAME: ${{ inputs.FULL_SERVICE_NAME }}
+        run: |
+          echo "========= Register New DB Migration Task =========="
+          aws ecs register-task-definition \
+            --cli-input-json file://newtask-${{ inputs.ENVIRONMENT }}-migration.json
+          export CURRENT_TASK_DEF=$(aws ecs describe-task-definition --task-definition ${FULL_SERVICE_NAME}-db-migration | jq -r '.taskDefinition.taskDefinitionArn')
+          export SUBNET_IDS=$(aws ecs describe-services --service $FULL_SERVICE_NAME --cluster $FULL_CLUSTER_NAME --region ${{ inputs.REGION }} | jq '.services[].deployments[] | select(.status | contains("PRIMARY")) | .networkConfiguration.awsvpcConfiguration.subnets')
+          export SECURITY_GROUP_IDS=$(aws ecs describe-services --service $FULL_SERVICE_NAME --cluster $FULL_CLUSTER_NAME --region ${{ inputs.REGION }} | jq '.services[].deployments[] | select(.status | contains("PRIMARY")) | .networkConfiguration.awsvpcConfiguration.securityGroups')
+          export ASSIGN_PUBLIC_IP=$(aws ecs describe-services --service $FULL_SERVICE_NAME --cluster $FULL_CLUSTER_NAME --region ${{ inputs.REGION }}| jq '.services[].deployments[] | select(.status | contains("PRIMARY")) | .networkConfiguration.awsvpcConfiguration.assignPublicIp')
+          result=$(aws ecs run-task --task-definition $CURRENT_TASK_DEF \
+            --cluster $FULL_CLUSTER_NAME \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=${SUBNET_IDS},securityGroups=${SECURITY_GROUP_IDS},assignPublicIp=${ASSIGN_PUBLIC_IP}}")
+          task_arn=$(echo $result | jq '.tasks[0].taskArn' | sed -e 's/^"//' -e 's/"$//' )
+          aws ecs wait tasks-stopped --cluster $FULL_CLUSTER_NAME --tasks "${task_arn}"
+          task_exit_code=$(aws ecs describe-tasks --cluster $FULL_CLUSTER_NAME --tasks "${task_arn}" --region ${{ inputs.REGION }} |  jq '.tasks[0].containers[0].exitCode')
+          echo "task exit code is ${task_exit_code}"
+          if [ $task_exit_code -ne "0" ]; then echo "Migration task stopped with error, please check error message in AWS ECS console"; exit $task_exit_code; fi
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --region ${{ inputs.REGION }} --task-definition ${{ inputs.FULL_SERVICE_NAME }} --query taskDefinition > task-definition.json
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.FULL_SERVICE_NAME }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY}}:${{ env.sha }}
+      - name: Deploy to Amazon ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          cluster: ${{ inputs.FULL_CLUSTER_NAME }}
+          service: ${{ inputs.FULL_SERVICE_NAME }}
+          wait-for-service-stability: true
+      - name: Create Sentry release
+        if: ${{ inputs.SENTRY_ORG && inputs.SENTRY_PROJECT }}
+        uses: getsentry/action-release@v1.4.1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ inputs.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ inputs.SENTRY_PROJECT }}
+        with:
+          environment: ${{ inputs.ENVIRONMENT }}
+          version: ${{ env.sha }}
+          ignore_missing: true
+          ignore_empty: true
