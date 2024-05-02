@@ -60,7 +60,6 @@ on:
         required: true
         type: string
       SENTRY_PUBLIC_DSN:
-        required: true
         type: string
       NEXT_PUBLIC_BACKEND_WS_URL:
         required: true
@@ -199,6 +198,7 @@ jobs:
           image: ${{ steps.login-ecr.outputs.registry }}/${{inputs.ECR_REPOSITORY}}:${{ env.sha }}
           environment-variables: |
             SENTRY_RELEASE=${{ env.sha }}
+          if: ${{ inputs.SENTRY_PUBLIC_DSN != '' }}
 
       - name: Deploy to Amazon ECS service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
