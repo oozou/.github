@@ -93,9 +93,9 @@ jobs:
       - name: Download Go Dependencies
         run: |
           git config --global url."https://${CICD_GH_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
           cd tests
           go env -w GOPRIVATE=github.com/oozou/*
+          go get github.com/oozou/terraform-test-util@latest
           go mod download
         env:
           CICD_GH_PAT: ${{ secrets.CICD_GH_PAT }}
