@@ -1,0 +1,311 @@
+name: Reusable Terraform Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      aws_region:
+        description: 'AWS Region for testing'
+        required: false
+        type: string
+        default: 'ap-southeast-1'
+      tf_version:
+        description: 'Terraform version to use'
+        required: false
+        type: string
+        default: '1.6.0'
+      go_version:
+        description: 'Go version to use'
+        required: false
+        type: string
+        default: '1.21'
+      test_example_path:
+        description: 'Path to test example directory'
+        required: false
+        type: string
+        default: 'examples/postgresql-test'
+      timeout_minutes:
+        description: 'Timeout for test job in minutes'
+        required: false
+        type: number
+        default: 60
+      module_name:
+        description: 'Module name for test report'
+        required: true
+        type: string
+      iam_oidc_role:
+        description: 'IAM OIDC Role to assume for AWS credentials'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: ${{ inputs.aws_region }}
+  TF_VERSION: ${{ inputs.tf_version }}
+  GO_VERSION: ${{ inputs.go_version }}
+permissions:
+      id-token: write
+      contents: read    # This is required for actions/checkout
+      pull-requests: read
+      
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init (Main Module)
+        run: terraform init -backend=false
+
+      - name: Terraform Validate (Main Module)
+        run: terraform validate
+
+      - name: Terraform Init (Test Example)
+        run: |
+          cd ${{ inputs.test_example_path }}
+          terraform init -backend=false
+
+      - name: Terraform Validate (Test Example)
+        run: |
+          cd ${{ inputs.test_example_path }}
+          terraform validate
+
+  lint:
+    name: Lint Go Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download Go Dependencies
+        run: |
+          cd tests
+          go mod download
+
+      - name: Run Go Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          working-directory: tests
+
+  test:
+    name: Run Full Test Suite
+    runs-on: ubuntu-latest
+    needs: [validate, lint]
+    environment: testing
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.iam_oidc_role }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download Go Dependencies
+        run: |
+          cd tests
+          go mod download
+
+      - name: Run All Tests
+        id: run-tests
+        run: |
+          cd tests
+          go test -v -timeout 45m
+        env:
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+        continue-on-error: true
+
+      - name: Generate Test Report
+        if: always()
+        run: |
+          cd tests
+          make generate-report
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: tests/test-report.html
+          retention-days: 30
+
+      - name: Read Test Report
+        if: always()
+        id: test-report
+        run: |
+          cd tests
+          if [ -f test-report.json ]; then
+            echo "Test report found, reading results..."
+            
+            # Extract key metrics from JSON report
+            TOTAL_TESTS=$(jq -r '.total_tests // 0' test-report.json)
+            PASSED_TESTS=$(jq -r '.passed_tests // 0' test-report.json)
+            FAILED_TESTS=$(jq -r '.failed_tests // 0' test-report.json)
+            SKIPPED_TESTS=$(jq -r '.skipped_tests // 0' test-report.json)
+            DURATION=$(jq -r '.duration // "N/A"' test-report.json)
+            SUMMARY=$(jq -r '.summary // "No summary available"' test-report.json)
+            
+            # Calculate pass rate
+            if [ "$TOTAL_TESTS" -gt 0 ]; then
+              PASS_RATE=$(echo "scale=1; $PASSED_TESTS * 100 / $TOTAL_TESTS" | bc -l)
+            else
+              PASS_RATE="0.0"
+            fi
+            
+            # Set job status based on test results
+            if [ "$FAILED_TESTS" -eq 0 ]; then
+              JOB_STATUS="✅ SUCCESS"
+            else
+              JOB_STATUS="❌ FAILURE"
+            fi
+            
+            # Create detailed test results
+            DETAILED_RESULTS=$(jq -r '.results[] | "- **\(.name)**: \(if .status == "PASS" then "✅ PASS" elif .status == "FAIL" then "❌ FAIL" else "⏭️ SKIP" end) (\(.duration))\(if .error and .error != "" then "\n  Error: `\(.error)`" else "" end)"' test-report.json)
+            
+            # Export variables for next step
+            echo "TOTAL_TESTS=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+            echo "PASSED_TESTS=$PASSED_TESTS" >> $GITHUB_OUTPUT
+            echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_OUTPUT
+            echo "SKIPPED_TESTS=$SKIPPED_TESTS" >> $GITHUB_OUTPUT
+            echo "DURATION=$DURATION" >> $GITHUB_OUTPUT
+            echo "SUMMARY=$SUMMARY" >> $GITHUB_OUTPUT
+            echo "PASS_RATE=$PASS_RATE" >> $GITHUB_OUTPUT
+            echo "JOB_STATUS=$JOB_STATUS" >> $GITHUB_OUTPUT
+            
+            # Handle multiline detailed results
+            {
+              echo 'DETAILED_RESULTS<<EOF'
+              echo "$DETAILED_RESULTS"
+              echo 'EOF'
+            } >> $GITHUB_OUTPUT
+            
+          else
+            echo "No test report found, setting default values..."
+            echo "TOTAL_TESTS=0" >> $GITHUB_OUTPUT
+            echo "PASSED_TESTS=0" >> $GITHUB_OUTPUT
+            echo "FAILED_TESTS=0" >> $GITHUB_OUTPUT
+            echo "SKIPPED_TESTS=0" >> $GITHUB_OUTPUT
+            echo "DURATION=N/A" >> $GITHUB_OUTPUT
+            echo "SUMMARY=Test report not generated" >> $GITHUB_OUTPUT
+            echo "PASS_RATE=0.0" >> $GITHUB_OUTPUT
+            echo "JOB_STATUS=❌ ERROR" >> $GITHUB_OUTPUT
+            echo "DETAILED_RESULTS=No detailed results available" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post Test Report Comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const totalTests = String.raw`${{ steps.test-report.outputs.TOTAL_TESTS }}`;
+            const passedTests = String.raw`${{ steps.test-report.outputs.PASSED_TESTS }}`;
+            const failedTests = String.raw`${{ steps.test-report.outputs.FAILED_TESTS }}`;
+            const skippedTests = String.raw`${{ steps.test-report.outputs.SKIPPED_TESTS }}`;
+            const duration = String.raw`${{ steps.test-report.outputs.DURATION }}`;
+            const summary = String.raw`${{ steps.test-report.outputs.SUMMARY }}`;
+            const passRate = String.raw`${{ steps.test-report.outputs.PASS_RATE }}`;
+            const jobStatus = String.raw`${{ steps.test-report.outputs.JOB_STATUS }}`;
+            const detailedResults = String.raw`${{ steps.test-report.outputs.DETAILED_RESULTS }}`;
+            const moduleName = String.raw`${{ inputs.module_name }}`;
+            
+            const workflowUrl = context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId;
+            const commitSha = context.payload.pull_request.head.sha.substring(0, 7);
+            
+            // Check if job failed and add Claude fix comment prefix
+            let commentPrefix = '';
+            if (failedTests !== '0' || jobStatus.includes('FAILURE') || jobStatus.includes('ERROR')) {
+              commentPrefix = '@claude fix build error:\n\n';
+            }
+            
+            const successMessage = failedTests === '0' ? 
+              `🎉 **All tests passed!** Your changes are working correctly with the ${moduleName} module.` :
+              `⚠️ **Some tests failed.** Please review the errors above and check the workflow logs for more details.`;
+            
+            let commentBody = commentPrefix;
+            commentBody += `## 🧪 Terraform ${moduleName} Test Report\n\n`;
+            commentBody += '**Job Status:** ' + jobStatus + '  \n';
+            commentBody += '**Commit:** `' + commitSha + '`  \n';
+            commentBody += '**Workflow:** [View Details](' + workflowUrl + ')\n\n';
+            commentBody += '### 📊 Test Summary\n';
+            commentBody += '| Metric | Value |\n';
+            commentBody += '|--------|---------|\n';
+            commentBody += '| **Total Tests** | ' + totalTests + ' |\n';
+            commentBody += '| **✅ Passed** | ' + passedTests + ' |\n';
+            commentBody += '| **❌ Failed** | ' + failedTests + ' |\n';
+            commentBody += '| **⏭️ Skipped** | ' + skippedTests + ' |\n';
+            commentBody += '| **⏱️ Duration** | ' + duration + ' |\n';
+            commentBody += '| **📈 Pass Rate** | ' + passRate + '% |\n\n';
+            commentBody += '### 📝 Result Summary\n';
+            commentBody += summary + '\n\n';
+            commentBody += '### 📋 Detailed Test Results\n';
+            commentBody += (detailedResults || 'No detailed results available') + '\n\n';
+            commentBody += '---\n\n';
+            commentBody += successMessage + '\n\n';
+            commentBody += '<sub>Generated by terraform-test workflow • ' + new Date().toISOString() + '</sub>';
+            
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes(`🧪 Terraform ${moduleName} Test Report`)
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody
+              });
+              console.log('Updated existing test report comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: commentBody
+              });
+              console.log('Created new test report comment');
+            }
+
+      - name: Fail job if tests failed
+        if: always() && steps.run-tests.outcome == 'failure'
+        run: |
+          echo "Tests failed, failing the job"
+          exit 1
