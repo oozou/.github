@@ -100,6 +100,7 @@ jobs:
       - name: Download Go Dependencies
         run: |
           cd tests
+          go env -w GOPRIVATE=github.com/oozou/*
           go mod download
 
       - name: Run Go Lint
