@@ -141,8 +141,14 @@ jobs:
 
       - name: Download Go Dependencies
         run: |
+          git config --global url."https://${CICD_GH_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
           cd tests
+          go env -w GOPRIVATE=github.com/oozou/*
           go mod download
+        env:
+          CICD_GH_PAT: ${{ secrets.CICD_GH_PAT }}
+          GOPRIVATE: github.com/oozou/*
+          GIT_TERMINAL_PROMPT: 0  
 
       - name: Run All Tests
         id: run-tests
