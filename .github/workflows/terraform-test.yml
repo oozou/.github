@@ -92,7 +92,7 @@ jobs:
 
       - name: Download Go Dependencies
         run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
           cd tests
           go env -w GOPRIVATE=github.com/oozou/*
           go mod download
