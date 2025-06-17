@@ -90,20 +90,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: test access
-        run: git ls-remote https://github.com/oozou/terraform-test-util
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Download Go Dependencies
         run: |
-          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://${CICD_GH_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
           cd tests
           go env -w GOPRIVATE=github.com/oozou/*
           go mod download
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CICD_GH_PAT: ${{ secrets.CICD_GH_PAT }}
           GOPRIVATE: github.com/oozou/*
           GIT_TERMINAL_PROMPT: 0  
 
