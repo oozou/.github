@@ -45,14 +45,14 @@ permissions:
       id-token: write
       contents: read    # This is required for actions/checkout
       pull-requests: read
-      
+concurrency:
+  group: ${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Validate Terraform
     runs-on: oozou-eks-runner
-    concurrency:
-      group: ${{ github.repository }}-${{ github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -84,9 +84,6 @@ jobs:
   lint:
     name: Lint Go Code
     runs-on: oozou-eks-runner
-    concurrency:
-      group: ${{ github.repository }}-${{ github.ref }}
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -123,9 +120,6 @@ jobs:
       contents: read
       pull-requests: write
     timeout-minutes: ${{ inputs.timeout_minutes }}
-    concurrency:
-      group: ${{ github.repository }}-${{ github.ref }}
-      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
